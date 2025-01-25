@@ -1,40 +1,37 @@
-const express = require("express");
-const fs = require("fs");
-const path = require("path");
-
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
-const PORT = 3000;
 
+// تحديد المنفذ (يستخدم المنفذ من البيئة أو 3000)
+const PORT = process.env.PORT || 3000;
+
+// استخدام Express لعرض الملفات الساكنة من مجلد "public"
+app.use(express.static(path.join(__dirname, 'public')));
+
+// تمكين قراءة بيانات JSON في الطلبات
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
 
-app.post("/submit", (req, res) => {
+// استلام الإجابات وحفظها في ملف responses.txt
+app.post('/submit', (req, res) => {
   const { question, answer } = req.body;
-  const filePath = path.join(__dirname, "responses.json");
 
-  fs.readFile(filePath, "utf8", (err, data) => {
-    let responses = [];
+  if (!question || !answer) {
+    return res.status(400).send('Invalid input');
+  }
+
+  const data = `${new Date().toISOString()} - ${question}: ${answer}\n`;
+
+  fs.appendFile('responses.txt', data, (err) => {
     if (err) {
-      if (err.code === "ENOENT") {
-        responses = [];
-      } else {
-        return res.status(500).send("Error reading file.");
-      }
-    } else {
-      try {
-        responses = JSON.parse(data);
-      } catch {
-        responses = [];
-      }
+      console.error('Error saving response:', err);
+      return res.status(500).send('Error saving response');
     }
-
-    responses.push({ question, answer, date: new Date().toISOString() });
-
-    fs.writeFile(filePath, JSON.stringify(responses, null, 2), (err) => {
-      if (err) return res.status(500).send("Error saving answer.");
-      res.status(200).send("Answer saved!");
-    });
+    res.send('Response saved successfully');
   });
 });
 
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+// تشغيل السيرفر
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
