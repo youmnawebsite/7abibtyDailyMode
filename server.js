@@ -64,21 +64,32 @@ app.get('/responses/delete', async (req, res) => {
   }
 });
 
-// حفظ الإجابات في ملف
-app.get('/responses/save', async (req, res) => {
+// Endpoint لحفظ الإجابات وتنزيل الملف
+app.get('/responses/save-and-download', async (req, res) => {
   try {
+    // جلب الإجابات من قاعدة البيانات
     const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
     const responses = result.rows;
 
-    // حفظ البيانات كـ JSON في ملف
-    fs.writeFileSync('responses_backup.json', JSON.stringify(responses, null, 2), 'utf-8');
+    // اسم الملف والمسار
+    const filePath = __dirname + '/responses_backup.json';
 
-    res.send('Responses saved to responses_backup.json');
+    // حفظ البيانات كـ JSON في ملف
+    fs.writeFileSync(filePath, JSON.stringify(responses, null, 2), 'utf-8');
+
+    // تنزيل الملف
+    res.download(filePath, 'responses_backup.json', (err) => {
+      if (err) {
+        console.error('Error downloading the file:', err);
+        res.status(500).send('Error downloading the file');
+      }
+    });
   } catch (err) {
-    console.error('Error saving responses:', err);
-    res.status(500).send('Error saving responses');
+    console.error('Error saving or downloading responses:', err);
+    res.status(500).send('Error saving or downloading responses');
   }
 });
+
 
 // تشغيل السيرفر
 app.listen(PORT, () => {
