@@ -40,11 +40,11 @@ app.post('/submit', async (req, res) => {
   }
 });
 
-// عرض الإجابات (اختياري)
+// عرض جميع الإجابات
 app.get('/responses', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
-    res.json(result.rows);
+    res.json(result.rows); // إرسال البيانات كـ JSON
   } catch (err) {
     console.error('Error fetching responses:', err);
     res.status(500).send('Error fetching responses');
