@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg'); // مكتبة PostgreSQL
+const fs = require('fs'); // مكتبة لحفظ الملفات
 const app = express();
 
 // الاتصال بقاعدة البيانات
@@ -48,6 +49,33 @@ app.get('/responses', async (req, res) => {
   } catch (err) {
     console.error('Error fetching responses:', err);
     res.status(500).send('Error fetching responses');
+  }
+});
+
+// حذف جميع الإجابات
+app.delete('/responses/delete', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM responses');
+    res.send('All responses deleted successfully');
+  } catch (err) {
+    console.error('Error deleting responses:', err);
+    res.status(500).send('Error deleting responses');
+  }
+});
+
+// حفظ الإجابات في ملف
+app.get('/responses/save', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
+    const responses = result.rows;
+
+    // حفظ البيانات كـ JSON في ملف
+    fs.writeFileSync('responses_backup.json', JSON.stringify(responses, null, 2), 'utf-8');
+
+    res.send('Responses saved to responses_backup.json');
+  } catch (err) {
+    console.error('Error saving responses:', err);
+    res.status(500).send('Error saving responses');
   }
 });
 
