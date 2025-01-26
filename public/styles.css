@@ -45,7 +45,7 @@ body {
     color: #e0e0e0;
   }
   button {
-    font-family: 'Rubik', sans-serif;
+    font-family: 'Tajawal', sans-serif;
     background-color: #ff6f91;
     color: #fff;
     border: none;
@@ -63,6 +63,7 @@ body {
   }
 
   textarea {
+    font-family: 'rubik', sans-serif;
     animation: slideIn 1s ease-in-out;
     width: 100%;
     height: 100px;
