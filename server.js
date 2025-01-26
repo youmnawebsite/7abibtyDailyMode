@@ -53,7 +53,8 @@ app.get('/responses', async (req, res) => {
 });
 
 // حذف جميع الإجابات
-app.delete('/responses/delete', async (req, res) => {
+// إضافة دعم الحذف باستخدام GET
+app.get('/responses/delete', async (req, res) => {
   try {
     await pool.query('DELETE FROM responses');
     res.send('All responses deleted successfully');
