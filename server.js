@@ -65,7 +65,7 @@ app.get('/responses/delete', async (req, res) => {
 });
 
 // Endpoint لحفظ الإجابات وتنزيل الملف
-app.get('/responses/save-and-download', async (req, res) => {
+app.get('/responses/save', async (req, res) => {
   try {
     // جلب الإجابات من قاعدة البيانات
     const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
