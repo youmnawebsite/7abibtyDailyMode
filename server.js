@@ -31,7 +31,32 @@ app.get('/responses', async (req, res) => {
     res.status(500).send('Error fetching responses');
   }
 });
-// Endpoint to add a new response
+
+// Delete a response by ID
+app.delete('/responses/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    await pool.query('DELETE FROM responses WHERE id = $1', [id]);
+    res.status(200).send('Response deleted successfully.');
+  } catch (err) {
+    console.error('Error deleting response:', err);
+    res.status(500).send('Failed to delete response.');
+  }
+});
+
+// Update a response by ID
+app.put('/responses/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { answer } = req.body;
+    await pool.query('UPDATE responses SET answer = $1 WHERE id = $2', [answer, id]);
+    res.status(200).send('Response updated successfully.');
+  } catch (err) {
+    console.error('Error updating response:', err);
+    res.status(500).send('Failed to update response.');
+  }
+});
+
 // Submit a new response
 app.post('/submit', async (req, res) => {
   try {
@@ -47,40 +72,7 @@ app.post('/submit', async (req, res) => {
   }
 });
 
-// Endpoint to delete a specific response by ID
-app.delete('/responses/:id', (req, res) => {
-  try {
-    const responseId = parseInt(req.params.id, 10);
-    const responses = loadResponses();
-    const filteredResponses = responses.filter(response => response.id !== responseId);
-
-    if (responses.length === filteredResponses.length) {
-      return res.status(404).send('Response not found.');
-    }
-
-    saveResponses(filteredResponses);
-    res.send('Response deleted.');
-  } catch (err) {
-    res.status(500).send('Error deleting response.');
-  }
-});
-
-// Endpoint to delete all responses
-app.delete('/responses', (req, res) => {
-  try {
-    saveResponses([]);
-    res.send('All responses deleted.');
-  } catch (err) {
-    res.status(500).send('Error deleting all responses.');
-  }
-});
-
-// Serve the admin page
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
