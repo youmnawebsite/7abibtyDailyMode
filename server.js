@@ -25,9 +25,6 @@ function loadResponses() {
 function saveResponses(responses) {
   fs.writeFileSync(responsesFilePath, JSON.stringify(responses, null, 2));
 }
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
 
 // Endpoint to get all responses
 app.get('/responses', (req, res) => {
@@ -88,6 +85,11 @@ app.delete('/responses', (req, res) => {
   } catch (err) {
     res.status(500).send('Error deleting all responses.');
   }
+});
+
+// Serve the admin page
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // Start server
