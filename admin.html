@@ -6,136 +6,231 @@
   <title>Admin Panel</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
       padding: 0;
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      color: #495057;
     }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    h1 {
+      background: linear-gradient(135deg, #6c5ce7, #81ecec);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 2.5rem;
+      margin: 0;
+    }
+
+    .controls {
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .controls input,
+    .controls button {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ced4da;
+      outline: none;
+      font-size: 1rem;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .controls button {
+      background: #6c5ce7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .controls button:hover {
+      background: #5a4ecf;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
     }
-    table, th, td {
-      border: 1px solid #ddd;
-    }
-    th, td {
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    .button {
-      background-color: #4CAF50;
+
+    table thead {
+      background: #6c5ce7;
       color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      border-radius: 4px;
     }
-    .button.delete {
-      background-color: #f44336;
+
+    th, td {
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
     }
-    .button.edit {
-      background-color: #008CBA;
+
+    tr:hover {
+      background: #f1f3f5;
+    }
+
+    .stats {
+      padding: 20px;
+    }
+
+    .stats h2 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    .stats ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .stats li {
+      background: #81ecec;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      color: #2d3436;
     }
   </style>
 </head>
 <body>
-  <h1>Admin Panel</h1>
-  <table id="responsesTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Question</th>
-        <th>Answer</th>
-        <th>Timestamp</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Data will be populated here -->
-    </tbody>
-  </table>
-
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search by question or answer..." oninput="filterResponses()">
+      <input type="date" id="filter-date" onchange="filterResponses()">
+      <button onclick="clearFilters()">Clear Filters</button>
+      <button onclick="deleteAllResponses()">Delete All Responses</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Question</th>
+          <th>Answer</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="responses">
+        <!-- Responses will be loaded here -->
+      </tbody>
+    </table>
+    <div class="stats">
+      <h2>Statistics</h2>
+      <ul id="stats-list"></ul>
+    </div>
+  </div>
   <script>
-    // Fetch data and populate the table
-    async function fetchResponses() {
-      try {
-        const res = await fetch('/responses');
-        const data = await res.json();
+    let allResponses = [];
 
-        const tableBody = document.getElementById('responsesTable').querySelector('tbody');
-        tableBody.innerHTML = '';
-
-        data.forEach(response => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${response.id}</td>
-            <td>${response.question}</td>
-            <td>${response.answer}</td>
-            <td>${new Date(response.timestamp).toLocaleString()}</td>
-            <td>
-              <button class="button edit" onclick="editResponse(${response.id})">Edit</button>
-              <button class="button delete" onclick="deleteResponse(${response.id})">Delete</button>
-            </td>
-          `;
-          tableBody.appendChild(row);
+    function loadResponses() {
+      fetch('/responses')
+        .then(res => res.json())
+        .then(data => {
+          allResponses = data;
+          renderResponses(data);
+          updateStats();
         });
-      } catch (err) {
-        console.error('Error fetching responses:', err);
-        alert('Failed to fetch responses.');
-      }
     }
 
-    // Delete a response
-    async function deleteResponse(id) {
-      if (confirm('Are you sure you want to delete this response?')) {
-        try {
-          const res = await fetch(`/responses/${id}`, { method: 'DELETE' });
+    function renderResponses(data) {
+      const tbody = document.getElementById('responses');
+      tbody.innerHTML = '';
+      data.forEach(response => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${response.id}</td>
+          <td>${response.question}</td>
+          <td>${response.answer}</td>
+          <td>${response.timestamp}</td>
+          <td><button onclick="deleteResponse(${response.id})">Delete</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterResponses() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const filterDate = document.getElementById('filter-date').value;
+
+      let filtered = allResponses;
+
+      if (search) {
+        filtered = filtered.filter(
+          response =>
+            response.question.toLowerCase().includes(search) ||
+            response.answer.toLowerCase().includes(search)
+        );
+      }
+
+      if (filterDate) {
+        filtered = filtered.filter(response =>
+          response.timestamp.startsWith(filterDate)
+        );
+      }
+
+      renderResponses(filtered);
+    }
+
+    function clearFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('filter-date').value = '';
+      renderResponses(allResponses);
+    }
+
+    function deleteResponse(id) {
+      fetch(`/responses/${id}`, { method: 'DELETE' })
+        .then(res => {
           if (res.ok) {
-            alert('Response deleted successfully.');
-            fetchResponses();
-          } else {
-            throw new Error('Failed to delete response.');
+            alert('Response deleted!');
+            loadResponses();
           }
-        } catch (err) {
-          console.error('Error deleting response:', err);
-          alert('Failed to delete response.');
-        }
-      }
-    }
-
-    // Edit a response
-    function editResponse(id) {
-      const newAnswer = prompt('Enter the new answer:');
-      if (newAnswer) {
-        updateResponse(id, newAnswer);
-      }
-    }
-
-    // Update a response
-    async function updateResponse(id, newAnswer) {
-      try {
-        const res = await fetch(`/responses/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ answer: newAnswer }),
         });
-        if (res.ok) {
-          alert('Response updated successfully.');
-          fetchResponses();
-        } else {
-          throw new Error('Failed to update response.');
-        }
-      } catch (err) {
-        console.error('Error updating response:', err);
-        alert('Failed to update response.');
+    }
+
+    function deleteAllResponses() {
+      if (!confirm('Are you sure you want to delete all responses?')) return;
+      fetch('/responses', { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) {
+            alert('All responses deleted!');
+            loadResponses();
+          }
+        });
+    }
+
+    function updateStats() {
+      const statsList = document.getElementById('stats-list');
+      statsList.innerHTML = '';
+
+      const questionCounts = allResponses.reduce((acc, response) => {
+        acc[response.question] = (acc[response.question] || 0) + 1;
+        return acc;
+      }, {});
+
+      for (const [question, count] of Object.entries(questionCounts)) {
+        const li = document.createElement('li');
+        li.textContent = `${question}: ${count} responses`;
+        statsList.appendChild(li);
       }
     }
 
-    // Load responses when the page loads
-    fetchResponses();
+    loadResponses();
   </script>
 </body>
 </html>

@@ -1,78 +1,93 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const fs = require('fs');
 const path = require('path');
-
 const app = express();
-const port = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
-// Middleware
-app.use(bodyParser.json());
+const responsesFilePath = path.join(__dirname, 'responses.json');
+
+// Middleware to parse JSON
+app.use(express.json());
+
+// Serve static files (frontend)
 app.use(express.static('public'));
 
-// PostgreSQL Connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // Required for hosted databases like Railway
-});
+// Load responses from file or initialize empty array
+function loadResponses() {
+  if (!fs.existsSync(responsesFilePath)) {
+    fs.writeFileSync(responsesFilePath, JSON.stringify([]));
+  }
+  const data = fs.readFileSync(responsesFilePath, 'utf-8');
+  return JSON.parse(data);
+}
 
-// Serve Admin Page
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
+// Save responses to file
+function saveResponses(responses) {
+  fs.writeFileSync(responsesFilePath, JSON.stringify(responses, null, 2));
+}
 
-// Fetch all responses
-app.get('/responses', async (req, res) => {
+// Endpoint to get all responses
+app.get('/responses', (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
-    res.json(result.rows);
+    const responses = loadResponses();
+    res.json(responses);
   } catch (err) {
-    console.error('Error fetching responses:', err);
-    res.status(500).send('Error fetching responses');
+    res.status(500).send('Error reading responses.');
   }
 });
 
-// Delete a response by ID
-app.delete('/responses/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    await pool.query('DELETE FROM responses WHERE id = $1', [id]);
-    res.status(200).send('Response deleted successfully.');
-  } catch (err) {
-    console.error('Error deleting response:', err);
-    res.status(500).send('Failed to delete response.');
-  }
-});
-
-// Update a response by ID
-app.put('/responses/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
-    const { answer } = req.body;
-    await pool.query('UPDATE responses SET answer = $1 WHERE id = $2', [answer, id]);
-    res.status(200).send('Response updated successfully.');
-  } catch (err) {
-    console.error('Error updating response:', err);
-    res.status(500).send('Failed to update response.');
-  }
-});
-
-// Submit a new response
-app.post('/submit', async (req, res) => {
+// Endpoint to add a new response
+app.post('/responses', (req, res) => {
   try {
     const { question, answer } = req.body;
-    await pool.query('INSERT INTO responses (question, answer, timestamp) VALUES ($1, $2, NOW())', [
+    if (!question || !answer) {
+      return res.status(400).send('Question and answer are required.');
+    }
+
+    const responses = loadResponses();
+    const newResponse = {
+      id: responses.length > 0 ? responses[responses.length - 1].id + 1 : 1,
       question,
       answer,
-    ]);
-    res.status(200).send('Response submitted successfully.');
+      timestamp: new Date().toISOString(),
+    };
+    responses.push(newResponse);
+    saveResponses(responses);
+    res.status(201).json(newResponse);
   } catch (err) {
-    console.error('Error submitting response:', err);
-    res.status(500).send('Failed to submit response.');
+    res.status(500).send('Error saving response.');
   }
 });
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Endpoint to delete a specific response by ID
+app.delete('/responses/:id', (req, res) => {
+  try {
+    const responseId = parseInt(req.params.id, 10);
+    const responses = loadResponses();
+    const filteredResponses = responses.filter(response => response.id !== responseId);
+
+    if (responses.length === filteredResponses.length) {
+      return res.status(404).send('Response not found.');
+    }
+
+    saveResponses(filteredResponses);
+    res.send('Response deleted.');
+  } catch (err) {
+    res.status(500).send('Error deleting response.');
+  }
+});
+
+// Endpoint to delete all responses
+app.delete('/responses', (req, res) => {
+  try {
+    saveResponses([]);
+    res.send('All responses deleted.');
+  } catch (err) {
+    res.status(500).send('Error deleting all responses.');
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
