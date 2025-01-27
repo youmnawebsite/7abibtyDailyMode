@@ -1,61 +1,49 @@
 const express = require('express');
-const fs = require('fs');
+const bodyParser = require('body-parser');
+const { Pool } = require('pg');
 const path = require('path');
+
 const app = express();
-const PORT = process.env.PORT || 8080;
+const port = process.env.PORT || 8080;
 
-const responsesFilePath = path.join(__dirname, 'responses.json');
-
-// Middleware to parse JSON
-app.use(express.json());
-
-// Serve static files (frontend)
+// Middleware
+app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Load responses from file or initialize empty array
-function loadResponses() {
-  if (!fs.existsSync(responsesFilePath)) {
-    fs.writeFileSync(responsesFilePath, JSON.stringify([]));
-  }
-  const data = fs.readFileSync(responsesFilePath, 'utf-8');
-  return JSON.parse(data);
-}
-
-// Save responses to file
-function saveResponses(responses) {
-  fs.writeFileSync(responsesFilePath, JSON.stringify(responses, null, 2));
-}
-
-// Endpoint to get all responses
-app.get('/responses', (req, res) => {
-  try {
-    const responses = loadResponses();
-    res.json(responses);
-  } catch (err) {
-    res.status(500).send('Error reading responses.');
-  }
+// PostgreSQL Connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }, // Required for hosted databases like Railway
 });
 
+// Serve Admin Page
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// Fetch all responses
+app.get('/responses', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching responses:', err);
+    res.status(500).send('Error fetching responses');
+  }
+});
 // Endpoint to add a new response
-app.post('/responses', (req, res) => {
+// Submit a new response
+app.post('/submit', async (req, res) => {
   try {
     const { question, answer } = req.body;
-    if (!question || !answer) {
-      return res.status(400).send('Question and answer are required.');
-    }
-
-    const responses = loadResponses();
-    const newResponse = {
-      id: responses.length > 0 ? responses[responses.length - 1].id + 1 : 1,
+    await pool.query('INSERT INTO responses (question, answer, timestamp) VALUES ($1, $2, NOW())', [
       question,
       answer,
-      timestamp: new Date().toISOString(),
-    };
-    responses.push(newResponse);
-    saveResponses(responses);
-    res.status(201).json(newResponse);
+    ]);
+    res.status(200).send('Response submitted successfully.');
   } catch (err) {
-    res.status(500).send('Error saving response.');
+    console.error('Error submitting response:', err);
+    res.status(500).send('Failed to submit response.');
   }
 });
 
