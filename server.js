@@ -25,6 +25,9 @@ function loadResponses() {
 function saveResponses(responses) {
   fs.writeFileSync(responsesFilePath, JSON.stringify(responses, null, 2));
 }
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 // Endpoint to get all responses
 app.get('/responses', (req, res) => {
