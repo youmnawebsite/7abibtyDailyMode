@@ -48,8 +48,18 @@ app.delete('/responses/:id', async (req, res) => {
 app.put('/responses/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    const { answer } = req.body;
-    await pool.query('UPDATE responses SET answer = $1 WHERE id = $2', [answer, id]);
+    const { answer, timestamp } = req.body;
+
+    if (timestamp) {
+      await pool.query('UPDATE responses SET answer = $1, timestamp = $2 WHERE id = $3', [
+        answer,
+        timestamp,
+        id,
+      ]);
+    } else {
+      await pool.query('UPDATE responses SET answer = $1 WHERE id = $2', [answer, id]);
+    }
+
     res.status(200).send('Response updated successfully.');
   } catch (err) {
     console.error('Error updating response:', err);
