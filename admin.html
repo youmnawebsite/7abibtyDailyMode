@@ -296,7 +296,7 @@ function renderResponses(data) {
   const newAnswer = document.getElementById('update-answer').value;
   const newTimestamp = document.getElementById('update-timestamp').value;
 
-  if (!newAnswer && !newTimestamp) {
+  if (!newAnswer && !newTimestamp && !newResponseId) {
     alert('Please enter a new answer.');
     return;
   }
