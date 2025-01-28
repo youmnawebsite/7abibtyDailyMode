@@ -215,7 +215,7 @@ function renderResponses(data) {
   tbody.innerHTML = '';
   data.forEach(response => {
     const row = document.createElement('tr');
-    const formattedDate = format(new Date(response.timestamp), 'yyyy-MM-dd HH:mm:ss'); // تنسيق التاريخ
+    const formattedDate = new Date(response.timestamp).toLocaleString(); // استخدام toLocaleString بدلاً من format
     row.innerHTML = `
       <td>${response.id}</td>
       <td>${response.question}</td>

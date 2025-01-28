@@ -25,6 +25,7 @@ app.get('/admin', (req, res) => {
 app.get('/responses', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM responses ORDER BY timestamp DESC');
+    console.log(result.rows); // للتأكد من أن البيانات تُرجع بشكل صحيح
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching responses:', err);
