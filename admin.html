@@ -188,6 +188,7 @@
 <div class="modal" id="updateModal">
   <div class="modal-content">
     <h2>Update Answer</h2>
+    <input type="text" id="update-id" placeholder="New ID">
     <input type="text" id="update-answer" placeholder="New answer">
     <input type="datetime-local" id="update-timestamp">
     <button onclick="submitUpdate()">Update</button>
@@ -291,10 +292,11 @@ function renderResponses(data) {
     }
 
     function submitUpdate() {
+  const newResponseId = document.getElementById('update-id').value;  
   const newAnswer = document.getElementById('update-answer').value;
   const newTimestamp = document.getElementById('update-timestamp').value;
 
-  if (!newAnswer) {
+  if (!newAnswer && !newTimestamp) {
     alert('Please enter a new answer.');
     return;
   }
@@ -304,7 +306,7 @@ function renderResponses(data) {
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ answer: newAnswer, timestamp: newTimestamp })
+    body: JSON.stringify({ answer: newAnswer, timestamp: newTimestamp , id: newResponseId})
   })
     .then(res => {
       if (res.ok) {
