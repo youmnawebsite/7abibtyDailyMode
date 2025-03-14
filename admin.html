@@ -121,6 +121,11 @@
       justify-content: center;
       align-items: center;
     }
+    .select-response, #select-all {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
 
     .modal-content {
       background: white;
@@ -162,10 +167,12 @@
       <button onclick="clearFilters()">Clear Filters</button>
       <button onclick="deleteAllResponses()">Delete All Responses</button>
       <button onclick="exportToCSV()">Export to CSV</button>
+      <button onclick="deleteSelectedResponses()">Delete Selected</button>
     </div>
     <table>
       <thead>
         <tr>
+          <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
           <th>ID</th>
           <th>Question</th>
           <th>Answer</th>
@@ -173,6 +180,7 @@
           <th>Actions</th>
         </tr>
       </thead>
+      
       <tbody id="responses">
         <!-- Responses will be loaded here -->
       </tbody>
@@ -209,6 +217,9 @@
           updateStats();
         });
     }
+    function isAudioFile(answer) {
+  return /\.(mp3|wav|ogg)$/i.test(answer);
+}
 
 // في الجزء الخاص بعرض البيانات
 function renderResponses(data) {
@@ -218,9 +229,18 @@ function renderResponses(data) {
     const row = document.createElement('tr');
     const formattedDate = new Date(response.timestamp).toLocaleString(); // استخدام toLocaleString بدلاً من format
     row.innerHTML = `
+    <td><input type="checkbox" class="select-response" value="${response.id}"></td>
       <td>${response.id}</td>
       <td>${response.question}</td>
-      <td>${response.answer}</td>
+<td>
+  ${isAudioFile(response.answer) ? 
+    `<audio controls>
+      <source src="${response.answer}" type="audio/mpeg">
+      Your browser does not support the audio tag.
+    </audio>` 
+    : response.answer}
+</td>
+
       <td>${formattedDate}</td>
       <td>
         <button style="font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif; border-radius: 8px; padding: 10px; background: #e74c3c; color: white; border: none; cursor: pointer; transition: 0.3s;" onclick="deleteResponse(${response.id})">Delete</button>
@@ -343,6 +363,27 @@ function renderResponses(data) {
         statsList.appendChild(li);
       }
     }
+
+    function deleteSelectedResponses() {
+  const selected = Array.from(document.querySelectorAll('.select-response:checked')).map(cb => cb.value);
+  if (selected.length === 0) {
+    alert('No responses selected.');
+    return;
+  }
+  if (!confirm('Are you sure you want to delete selected responses?')) return;
+
+  Promise.all(selected.map(id => fetch(`/responses/${id}`, { method: 'DELETE' })))
+    .then(() => {
+      alert('Selected responses deleted!');
+      loadResponses();
+    });
+}
+
+function toggleSelectAll() {
+  const checkboxes = document.querySelectorAll('.select-response');
+  const selectAll = document.getElementById('select-all').checked;
+  checkboxes.forEach(cb => cb.checked = selectAll);
+}
 
     loadResponses();
   </script>
