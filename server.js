@@ -12,6 +12,37 @@ if (!fs.existsSync(uploadsDir)) {
   console.log('✅ Created uploads directory');
 }
 
+// التأكد من وجود مجلد backups
+const backupsDir = path.join(__dirname, 'backups');
+if (!fs.existsSync(backupsDir)) {
+  fs.mkdirSync(backupsDir, { recursive: true });
+  console.log('✅ Created backups directory');
+}
+
+// دالة لإنشاء نسخة احتياطية من ملف
+function backupFile(sourcePath, fileId) {
+  try {
+    if (!fs.existsSync(sourcePath)) {
+      console.error(`❌ Source file does not exist: ${sourcePath}`);
+      return false;
+    }
+
+    // إنشاء اسم الملف الاحتياطي
+    const fileExt = path.extname(sourcePath);
+    const backupFileName = `backup_${fileId}_${Date.now()}${fileExt}`;
+    const backupPath = path.join(backupsDir, backupFileName);
+
+    // نسخ الملف
+    fs.copyFileSync(sourcePath, backupPath);
+    console.log(`✅ Backup created: ${backupPath}`);
+
+    return backupFileName;
+  } catch (err) {
+    console.error(`❌ Error creating backup: ${err}`);
+    return false;
+  }
+}
+
 const app = express();
 const port = process.env.PORT || 8080;
 const storage = multer.diskStorage({
@@ -117,12 +148,40 @@ app.post('/submit', upload.single('audio'), async (req, res) => {
 
     console.log('📝 Saving to database:', { question, finalAnswer });
 
+    // إدراج الرد في قاعدة البيانات
     const result = await pool.query(
       'INSERT INTO responses (question, answer, timestamp) VALUES ($1, $2, NOW()) RETURNING *',
       [question, finalAnswer]
     );
 
+    const responseId = result.rows[0].id;
     console.log('✅ Response saved successfully:', result.rows[0]);
+
+    // إذا كان الرد يحتوي على ملف صوتي، قم بإنشاء نسخة احتياطية
+    if (finalAnswer && finalAnswer.startsWith('/uploads/')) {
+      const filePath = path.join(__dirname, finalAnswer.substring(1));
+
+      if (fs.existsSync(filePath)) {
+        // إنشاء نسخة احتياطية
+        const backupFileName = backupFile(filePath, responseId);
+
+        if (backupFileName) {
+          console.log(`✅ Backup created for file: ${backupFileName}`);
+
+          // تحديث السجل بمعلومات النسخة الاحتياطية
+          await pool.query(
+            'ALTER TABLE responses ADD COLUMN IF NOT EXISTS backup_path TEXT'
+          );
+
+          await pool.query(
+            'UPDATE responses SET backup_path = $1 WHERE id = $2',
+            [`/backups/${backupFileName}`, responseId]
+          );
+        }
+      } else {
+        console.error(`❌ Audio file not found for backup: ${filePath}`);
+      }
+    }
 
     // إرسال استجابة بسيطة لتجنب مشاكل التحليل في العميل
     res.status(200).send('OK');
@@ -272,7 +331,7 @@ app.post('/reorder-ids', async (req, res) => {
 app.get('/check-audio-files', async (req, res) => {
   try {
     // التحقق من قاعدة البيانات
-    const result = await pool.query('SELECT id, question, answer, timestamp FROM responses WHERE answer LIKE \'/uploads/%\'');
+    const result = await pool.query('SELECT id, question, answer, timestamp, backup_path FROM responses WHERE answer LIKE \'/uploads/%\'');
 
     // التحقق من وجود الملفات
     const audioResponses = result.rows;
@@ -282,10 +341,19 @@ app.get('/check-audio-files', async (req, res) => {
       const filePath = path.join(__dirname, response.answer.substring(1)); // إزالة الشرطة المائلة الأولى
       const exists = fs.existsSync(filePath);
 
+      // التحقق من وجود نسخة احتياطية
+      let backupExists = false;
+      if (response.backup_path) {
+        const backupPath = path.join(__dirname, response.backup_path.substring(1));
+        backupExists = fs.existsSync(backupPath);
+      }
+
       fileStatus.push({
         id: response.id,
         path: response.answer,
         exists: exists,
+        backup_path: response.backup_path,
+        backup_exists: backupExists,
         timestamp: response.timestamp
       });
     }
@@ -297,6 +365,83 @@ app.get('/check-audio-files', async (req, res) => {
   } catch (err) {
     console.error('❌ Error checking audio files:', err);
     res.status(500).json({ error: 'Failed to check audio files' });
+  }
+});
+
+// API لاستعادة ملف من النسخة الاحتياطية
+app.post('/restore-audio/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // البحث عن الرد
+    const result = await pool.query(
+      'SELECT id, answer, backup_path FROM responses WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Response not found' });
+    }
+
+    const response = result.rows[0];
+
+    // التحقق من وجود نسخة احتياطية
+    if (!response.backup_path) {
+      return res.status(404).json({ error: 'No backup found for this response' });
+    }
+
+    const backupPath = path.join(__dirname, response.backup_path.substring(1));
+
+    if (!fs.existsSync(backupPath)) {
+      return res.status(404).json({ error: 'Backup file not found' });
+    }
+
+    // إنشاء مسار الملف الأصلي
+    const originalPath = path.join(__dirname, response.answer.substring(1));
+    const originalDir = path.dirname(originalPath);
+
+    // التأكد من وجود المجلد
+    if (!fs.existsSync(originalDir)) {
+      fs.mkdirSync(originalDir, { recursive: true });
+    }
+
+    // نسخ الملف من النسخة الاحتياطية
+    fs.copyFileSync(backupPath, originalPath);
+
+    res.status(200).json({
+      message: 'Audio file restored successfully',
+      original_path: response.answer,
+      backup_path: response.backup_path
+    });
+  } catch (err) {
+    console.error('❌ Error restoring audio file:', err);
+    res.status(500).json({ error: 'Failed to restore audio file' });
+  }
+});
+
+// API لإدارة النسخ الاحتياطية
+app.get('/backups', async (req, res) => {
+  try {
+    // الحصول على جميع النسخ الاحتياطية
+    const files = fs.readdirSync(backupsDir);
+
+    const backups = files.map(file => {
+      const stats = fs.statSync(path.join(backupsDir, file));
+      return {
+        filename: file,
+        path: `/backups/${file}`,
+        size: stats.size,
+        created: stats.birthtime
+      };
+    });
+
+    res.json({
+      total: backups.length,
+      backups: backups
+    });
+  } catch (err) {
+    console.error('❌ Error fetching backups:', err);
+    res.status(500).json({ error: 'Failed to fetch backups' });
   }
 });
 

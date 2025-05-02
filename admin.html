@@ -18,6 +18,7 @@
       <li onclick="showTab('responses')">الردود</li>
       <li onclick="showTab('analytics')">التحليلات</li>
       <li onclick="showTab('reminders')">التذكيرات</li>
+      <li onclick="showTab('backups')">النسخ الاحتياطية</li>
     </ul>
 
     <!-- لوحة المعلومات -->
@@ -173,6 +174,64 @@
         </div>
       </div>
     </div>
+
+    <!-- النسخ الاحتياطية -->
+    <div id="backups-tab" class="tab-content">
+      <h2>إدارة النسخ الاحتياطية للتسجيلات الصوتية</h2>
+
+      <div class="controls">
+        <div class="action-buttons">
+          <button onclick="checkAudioFiles()" class="primary-btn">فحص ملفات الصوت</button>
+          <button onclick="loadBackups()" class="secondary-btn">تحديث قائمة النسخ الاحتياطية</button>
+        </div>
+      </div>
+
+      <div class="backup-section">
+        <h3>حالة ملفات الصوت</h3>
+        <div id="audio-status" class="status-container">
+          <p>اضغط على زر "فحص ملفات الصوت" لعرض حالة الملفات.</p>
+        </div>
+
+        <div id="missing-files-container" style="display: none;">
+          <h3>الملفات المفقودة</h3>
+          <div class="mobile-table-container">
+            <table id="missing-files-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>المسار</th>
+                  <th>التاريخ</th>
+                  <th>النسخة الاحتياطية</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="missing-files">
+                <!-- سيتم ملؤها ديناميكيًا -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="backup-section">
+        <h3>النسخ الاحتياطية المتوفرة</h3>
+        <div class="mobile-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم الملف</th>
+                <th>الحجم</th>
+                <th>تاريخ الإنشاء</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="backups-list">
+              <!-- سيتم ملؤها ديناميكيًا -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal for updating response -->
@@ -210,10 +269,21 @@
     window.onload = function() {
       loadResponses();
       loadReminders();
+      loadBackups();
 
       // تعيين التاريخ الافتراضي لفلتر التاريخ ليكون اليوم
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('filter-date').value = '';
+
+      // إضافة مستمع للتبويب
+      document.querySelectorAll('.nav-tabs li').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabName = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+          if (tabName === 'backups') {
+            loadBackups();
+          }
+        });
+      });
     };
 
     // عرض علامة تبويب محددة
@@ -1512,6 +1582,162 @@
     // إغلاق مربع حوار التذكير
     function closeReminderModal() {
       document.getElementById('reminderModal').style.display = 'none';
+    }
+
+    // فحص ملفات الصوت
+    function checkAudioFiles() {
+      const statusContainer = document.getElementById('audio-status');
+      statusContainer.innerHTML = '<p>جاري فحص ملفات الصوت...</p>';
+
+      fetch('/check-audio-files')
+        .then(res => res.json())
+        .then(data => {
+          const { totalAudioResponses, fileStatus } = data;
+
+          // حساب الإحصائيات
+          const missingFiles = fileStatus.filter(file => !file.exists);
+          const hasBackup = fileStatus.filter(file => file.backup_exists);
+
+          // عرض الإحصائيات
+          let statusHTML = `
+            <div class="backup-stats">
+              <div class="backup-stat">
+                <h4>إجمالي التسجيلات</h4>
+                <div class="value">${totalAudioResponses}</div>
+              </div>
+              <div class="backup-stat">
+                <h4>الملفات المفقودة</h4>
+                <div class="value">${missingFiles.length}</div>
+              </div>
+              <div class="backup-stat">
+                <h4>لها نسخة احتياطية</h4>
+                <div class="value">${hasBackup.length}</div>
+              </div>
+            </div>
+          `;
+
+          // إضافة رسالة الحالة
+          if (missingFiles.length === 0) {
+            statusHTML += `
+              <div class="status-container status-success">
+                <p>جميع ملفات الصوت موجودة وسليمة.</p>
+              </div>
+            `;
+            document.getElementById('missing-files-container').style.display = 'none';
+          } else {
+            statusHTML += `
+              <div class="status-container status-warning">
+                <p>هناك ${missingFiles.length} ملف صوتي مفقود. يمكنك استعادتها من النسخ الاحتياطية إذا كانت متوفرة.</p>
+              </div>
+            `;
+
+            // عرض الملفات المفقودة
+            document.getElementById('missing-files-container').style.display = 'block';
+            const missingFilesTable = document.getElementById('missing-files');
+            missingFilesTable.innerHTML = '';
+
+            missingFiles.forEach(file => {
+              const row = document.createElement('tr');
+              const formattedDate = new Date(file.timestamp).toLocaleString('ar-EG');
+
+              row.innerHTML = `
+                <td>${file.id}</td>
+                <td>${file.path}</td>
+                <td>${formattedDate}</td>
+                <td>${file.backup_exists ? 'متوفرة' : 'غير متوفرة'}</td>
+                <td>
+                  ${file.backup_exists ?
+                    `<button class="restore-btn" onclick="restoreAudioFile(${file.id})">استعادة</button>` :
+                    'لا يمكن الاستعادة'}
+                </td>
+              `;
+
+              missingFilesTable.appendChild(row);
+            });
+          }
+
+          statusContainer.innerHTML = statusHTML;
+        })
+        .catch(error => {
+          console.error('Error checking audio files:', error);
+          statusContainer.innerHTML = `
+            <div class="status-container status-error">
+              <p>حدث خطأ أثناء فحص ملفات الصوت. يرجى المحاولة مرة أخرى.</p>
+            </div>
+          `;
+        });
+    }
+
+    // تحميل النسخ الاحتياطية
+    function loadBackups() {
+      fetch('/backups')
+        .then(res => res.json())
+        .then(data => {
+          const { total, backups } = data;
+
+          const backupsList = document.getElementById('backups-list');
+          backupsList.innerHTML = '';
+
+          if (backups.length === 0) {
+            backupsList.innerHTML = '<tr><td colspan="4" style="text-align: center;">لا توجد نسخ احتياطية متوفرة</td></tr>';
+            return;
+          }
+
+          backups.forEach(backup => {
+            const row = document.createElement('tr');
+            const formattedDate = new Date(backup.created).toLocaleString('ar-EG');
+            const formattedSize = formatFileSize(backup.size);
+
+            row.innerHTML = `
+              <td>${backup.filename}</td>
+              <td>${formattedSize}</td>
+              <td>${formattedDate}</td>
+              <td>
+                <a href="${backup.path}" download class="download-btn">تحميل</a>
+              </td>
+            `;
+
+            backupsList.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading backups:', error);
+          document.getElementById('backups-list').innerHTML =
+            '<tr><td colspan="4" style="text-align: center;">حدث خطأ أثناء تحميل النسخ الاحتياطية</td></tr>';
+        });
+    }
+
+    // استعادة ملف صوتي من النسخة الاحتياطية
+    function restoreAudioFile(id) {
+      if (!confirm('هل أنت متأكد من استعادة هذا الملف من النسخة الاحتياطية؟')) return;
+
+      fetch(`/restore-audio/${id}`, {
+        method: 'POST'
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.message) {
+            alert('تم استعادة الملف بنجاح!');
+            checkAudioFiles(); // إعادة فحص الملفات
+          } else {
+            alert('حدث خطأ أثناء استعادة الملف: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error restoring audio file:', error);
+          alert('حدث خطأ أثناء استعادة الملف');
+        });
+    }
+
+    // تنسيق حجم الملف
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
   </script>
 </body>
