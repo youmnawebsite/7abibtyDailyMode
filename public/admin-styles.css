@@ -941,12 +941,13 @@ tr:hover {
     padding: 10px 0;
   }
 
-  /* Simplify table for very small screens */
-  th:nth-child(1),
-  td:nth-child(1),
-  th:nth-child(2),
-  td:nth-child(2) {
-    display: none;
+  /* Adjust table for very small screens */
+  th:nth-child(3),
+  td:nth-child(3) {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   th, td {

@@ -614,29 +614,35 @@ async function reorderAllIds(req, res) {
       const result = await client.query('SELECT id FROM responses ORDER BY timestamp');
       const responses = result.rows;
 
-      // إنشاء جدول مؤقت لتخزين التحديثات
-      await client.query(`
-        CREATE TEMP TABLE id_updates (
-          old_id INTEGER,
-          new_id INTEGER
-        )
-      `);
+      if (responses.length === 0) {
+        await client.query('COMMIT');
 
-      // إدراج التحديثات في الجدول المؤقت
+        if (res) {
+          res.status(200).json({
+            message: 'No responses to reorder',
+            count: 0
+          });
+        }
+
+        return true;
+      }
+
+      // استخدام طريقة أكثر أمانًا لإعادة ترتيب الـ IDs
+      // أولاً، نقوم بتحديث جميع الـ IDs إلى قيم سالبة مؤقتة لتجنب تعارضات المفاتيح الأساسية
       for (let i = 0; i < responses.length; i++) {
-        await client.query('INSERT INTO id_updates (old_id, new_id) VALUES ($1, $2)', [
-          responses[i].id,
-          i + 1
+        await client.query('UPDATE responses SET id = $1 WHERE id = $2', [
+          -(i + 1), // قيمة سالبة مؤقتة
+          responses[i].id
         ]);
       }
 
-      // تحديث الـ IDs باستخدام الجدول المؤقت
-      await client.query(`
-        UPDATE responses
-        SET id = id_updates.new_id
-        FROM id_updates
-        WHERE responses.id = id_updates.old_id
-      `);
+      // ثم نقوم بتحديث الـ IDs إلى القيم النهائية الموجبة
+      for (let i = 0; i < responses.length; i++) {
+        await client.query('UPDATE responses SET id = $1 WHERE id = $2', [
+          i + 1, // القيمة النهائية
+          -(i + 1)
+        ]);
+      }
 
       // إعادة ضبط تسلسل الـ ID
       await client.query(`ALTER SEQUENCE responses_id_seq RESTART WITH ${responses.length + 1}`);
