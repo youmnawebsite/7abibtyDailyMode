@@ -800,11 +800,26 @@
           <td>${response.question}</td>
           <td>
             ${isAudio ?
-              `<div class="audio-player">
-                <audio controls controlsList="nodownload">
-                  <source src="${response.answer}" type="${audioMimeType}">
-                  المتصفح لا يدعم تشغيل الصوت.
-                </audio>
+              `<div class="audio-player" data-src="${response.answer}" data-type="${audioMimeType}">
+                <div class="custom-audio-player">
+                  <div class="audio-progress-container">
+                    <div class="audio-progress-bar"></div>
+                  </div>
+                  <div class="audio-controls">
+                    <div class="audio-buttons">
+                      <button class="play-btn" title="تشغيل">▶️</button>
+                      <button class="pause-btn" title="إيقاف مؤقت" style="display:none;">⏸️</button>
+                      <button class="stop-btn" title="إيقاف">⏹️</button>
+                    </div>
+                    <div class="audio-time">
+                      <span class="current-time">00:00</span> / <span class="total-time">00:00</span>
+                    </div>
+                    <div class="audio-volume">
+                      <span>🔊</span>
+                      <input type="range" min="0" max="1" step="0.1" value="1" class="volume-control">
+                    </div>
+                  </div>
+                </div>
                 <div class="audio-player-controls">
                   <a href="${response.answer}" download title="تحميل الملف الصوتي">⬇️</a>
                 </div>
@@ -826,21 +841,116 @@
 
     // تحسين مشغلات الصوت
     function enhanceAudioPlayers() {
-      // تحسين جميع مشغلات الصوت في الصفحة
-      document.querySelectorAll('.audio-player audio').forEach(audio => {
-        // إضافة أحداث لتحسين تجربة المستخدم
-        audio.addEventListener('play', function() {
-          // إيقاف جميع مشغلات الصوت الأخرى عند تشغيل واحد
-          document.querySelectorAll('.audio-player audio').forEach(otherAudio => {
-            if (otherAudio !== audio && !otherAudio.paused) {
-              otherAudio.pause();
-            }
-          });
+      // تهيئة جميع مشغلات الصوت المخصصة
+      document.querySelectorAll('.audio-player').forEach(playerContainer => {
+        const audioSrc = playerContainer.getAttribute('data-src');
+        const audioType = playerContainer.getAttribute('data-type');
+
+        if (!audioSrc) return;
+
+        // إنشاء عنصر الصوت
+        const audio = new Audio();
+        audio.src = audioSrc;
+        audio.preload = 'metadata';
+
+        // الحصول على عناصر التحكم
+        const playBtn = playerContainer.querySelector('.play-btn');
+        const pauseBtn = playerContainer.querySelector('.pause-btn');
+        const stopBtn = playerContainer.querySelector('.stop-btn');
+        const progressBar = playerContainer.querySelector('.audio-progress-bar');
+        const progressContainer = playerContainer.querySelector('.audio-progress-container');
+        const currentTimeDisplay = playerContainer.querySelector('.current-time');
+        const totalTimeDisplay = playerContainer.querySelector('.total-time');
+        const volumeControl = playerContainer.querySelector('.volume-control');
+
+        // تعيين مستوى الصوت الأقصى
+        audio.volume = 1.0;
+
+        // تحميل البيانات الوصفية للصوت
+        audio.addEventListener('loadedmetadata', () => {
+          totalTimeDisplay.textContent = formatTime(audio.duration);
         });
 
-        // تحسين جودة الصوت
-        audio.volume = 1.0; // أقصى مستوى صوت
+        // تحديث شريط التقدم والوقت الحالي
+        audio.addEventListener('timeupdate', () => {
+          const progress = (audio.currentTime / audio.duration) * 100;
+          progressBar.style.width = `${progress}%`;
+          currentTimeDisplay.textContent = formatTime(audio.currentTime);
+        });
+
+        // تشغيل الصوت
+        playBtn.addEventListener('click', () => {
+          // إيقاف جميع مشغلات الصوت الأخرى
+          document.querySelectorAll('.audio-player').forEach(otherPlayer => {
+            if (otherPlayer !== playerContainer) {
+              const otherPlayBtn = otherPlayer.querySelector('.play-btn');
+              const otherPauseBtn = otherPlayer.querySelector('.pause-btn');
+              if (otherPlayBtn && otherPauseBtn) {
+                otherPlayBtn.style.display = 'block';
+                otherPauseBtn.style.display = 'none';
+              }
+            }
+          });
+
+          // تشغيل الصوت الحالي
+          audio.play().catch(error => {
+            console.error('Error playing audio:', error);
+            alert('حدث خطأ أثناء تشغيل الصوت. يرجى المحاولة مرة أخرى.');
+          });
+
+          // تبديل الأزرار
+          playBtn.style.display = 'none';
+          pauseBtn.style.display = 'block';
+        });
+
+        // إيقاف الصوت مؤقتًا
+        pauseBtn.addEventListener('click', () => {
+          audio.pause();
+
+          // تبديل الأزرار
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
+
+        // إيقاف الصوت
+        stopBtn.addEventListener('click', () => {
+          audio.pause();
+          audio.currentTime = 0;
+
+          // تبديل الأزرار
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
+
+        // التحكم في مستوى الصوت
+        volumeControl.addEventListener('input', () => {
+          audio.volume = volumeControl.value;
+        });
+
+        // التحكم في التقدم بالنقر على شريط التقدم
+        progressContainer.addEventListener('click', (event) => {
+          const rect = progressContainer.getBoundingClientRect();
+          const clickPosition = (event.clientX - rect.left) / rect.width;
+          audio.currentTime = clickPosition * audio.duration;
+        });
+
+        // إعادة تعيين عند انتهاء الصوت
+        audio.addEventListener('ended', () => {
+          audio.currentTime = 0;
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
       });
+    }
+
+    // تنسيق الوقت (ثواني إلى mm:ss)
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return '00:00';
+
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 
     // تحديث معلومات الترقيم

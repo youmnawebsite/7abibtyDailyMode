@@ -218,12 +218,46 @@ table thead {
 
 th, td {
   padding: 15px;
-  text-align: left;
+  text-align: right;
   border-bottom: 1px solid var(--border-color);
 }
 
 tr:hover {
   background: #f1f3f5;
+}
+
+/* Action Buttons */
+.delete-btn, .edit-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin: 0 3px;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.delete-btn {
+  background-color: var(--danger-color);
+}
+
+.edit-btn {
+  background-color: var(--info-color);
+}
+
+.delete-btn:hover, .edit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.delete-btn:hover {
+  background-color: #c0392b;
+}
+
+.edit-btn:hover {
+  background-color: #2980b9;
 }
 
 /* Stats */
