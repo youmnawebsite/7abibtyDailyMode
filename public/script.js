@@ -25,8 +25,11 @@ const submitBtn = document.getElementById("submitBtn");
 const recordButton = document.getElementById("recordButton");
 const stopButton = document.getElementById("stopButton");
 const audioPreview = document.getElementById("audioPreview");
+const recordingTimer = document.getElementById("recordingTimer");
+const retryButton = document.getElementById("retryButton");
 
 let mediaRecorder;
+let mediaStream;
 let audioBlob;
 
 function showQuestion() {
@@ -62,9 +65,11 @@ function showQuestion() {
 }
 
 function handleAnswer(answer, showExtraInput, allowRecording) {
+  // إذا كان السؤال يتطلب إدخال نص إضافي
   if (showExtraInput) {
+    // إظهار حقل الإدخال النصي
     extraInput.style.display = "flex";
-    extraInput.style.width = "80%"; // إصلاح الستايل
+    extraInput.style.width = "80%";
     extraInput.style.padding = "10px";
     extraInput.style.marginTop = "10px";
     extraInput.style.borderRadius = "12px";
@@ -73,11 +78,26 @@ function handleAnswer(answer, showExtraInput, allowRecording) {
     extraInput.style.justifyContent = "center";
     extraInput.style.alignItems = "center";
     extraInput.style.minHeight = "50px";
+
+    // إظهار زر الإرسال
     submitBtn.style.display = "block";
 
-    submitBtn.onclick = () => submitAnswer(answer + " - " + extraInput.value, null);
-  }
-   else {
+    // تعيين وظيفة زر الإرسال
+    submitBtn.onclick = function() {
+      // التحقق من أن المستخدم أدخل نصًا
+      if (extraInput.value.trim() === "") {
+        alert("الرجاء إدخال نص قبل الإرسال");
+        return;
+      }
+
+      // إرسال الإجابة مع النص الإضافي
+      submitAnswer(answer + " - " + extraInput.value, null);
+    };
+
+    // عدم إرسال الإجابة تلقائيًا، ننتظر النقر على زر الإرسال
+    return;
+  } else {
+    // إذا كان السؤال لا يتطلب إدخال نص إضافي، إرسال الإجابة مباشرة
     submitAnswer(answer, null);
   }
 
@@ -85,27 +105,55 @@ function handleAnswer(answer, showExtraInput, allowRecording) {
   if (allowRecording && answer === "آه عاوزة") {
     recordButton.style.display = "block";
     recordButton.onclick = startRecording;
+
+    // عدم إرسال الإجابة تلقائيًا، ننتظر التسجيل
+    return;
   }
 }
 
-const recordingTimer = document.getElementById("recordingTimer");
-const retryButton = document.getElementById("retryButton");
+// تم نقل تعريفات recordingTimer و retryButton إلى بداية الملف
 
 function startRecording() {
+  console.log("Starting audio recording...");
+
   // طلب الإذن باستخدام الميكروفون بإعدادات بسيطة
   navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
+      console.log("Microphone access granted");
       mediaStream = stream;
 
       // إنشاء مسجل الصوت
       try {
-        // محاولة استخدام تنسيق أفضل للصوت
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: 'audio/webm',
-          audioBitsPerSecond: 128000
-        });
+        // تحديد تنسيقات الصوت المدعومة
+        const mimeTypes = [
+          'audio/webm',
+          'audio/webm;codecs=opus',
+          'audio/mp4',
+          'audio/ogg',
+          ''  // تنسيق افتراضي
+        ];
+
+        // البحث عن تنسيق مدعوم
+        let selectedMimeType = '';
+        for (let type of mimeTypes) {
+          if (type && MediaRecorder.isTypeSupported(type)) {
+            selectedMimeType = type;
+            break;
+          }
+        }
+
+        console.log("Using MIME type:", selectedMimeType || "browser default");
+
+        // إنشاء مسجل الصوت بالتنسيق المدعوم
+        const options = selectedMimeType ?
+          { mimeType: selectedMimeType, audioBitsPerSecond: 128000 } :
+          {};
+
+        mediaRecorder = new MediaRecorder(stream, options);
+        console.log("MediaRecorder created with options:", options);
       } catch (e) {
-        console.warn('تنسيق الصوت المحدد غير مدعوم، استخدام التنسيق الافتراضي', e);
+        console.warn('Error creating MediaRecorder:', e);
+        console.log('Falling back to default format');
         mediaRecorder = new MediaRecorder(stream);
       }
 
@@ -126,6 +174,7 @@ function startRecording() {
 
       // جمع بيانات الصوت
       mediaRecorder.ondataavailable = event => {
+        console.log("Data available event, size:", event.data.size);
         if (event.data.size > 0) {
           audioChunks.push(event.data);
         }
@@ -133,13 +182,19 @@ function startRecording() {
 
       // معالجة إيقاف التسجيل
       mediaRecorder.onstop = () => {
+        console.log("Recording stopped");
+
         // إيقاف المؤقت
         clearInterval(timerInterval);
         recordingTimer.style.display = "none";
 
         // إنشاء ملف الصوت
         const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        console.log("Creating audio blob with MIME type:", mimeType);
+        console.log("Audio chunks:", audioChunks.length);
+
         audioBlob = new Blob(audioChunks, { type: mimeType });
+        console.log("Audio blob created, size:", audioBlob.size, "bytes");
 
         // عرض الصوت للمعاينة
         const audioUrl = URL.createObjectURL(audioBlob);
@@ -153,14 +208,19 @@ function startRecording() {
         submitBtn.style.display = "block";
 
         // تعيين وظيفة زر الإرسال
-        submitBtn.onclick = () => submitAnswer("تسجيل صوتي", audioBlob);
+        submitBtn.onclick = () => {
+          console.log("Submit button clicked for audio recording");
+          submitAnswer("تسجيل صوتي", audioBlob);
+        };
 
         // إيقاف الميكروفون
         mediaStream.getTracks().forEach(track => track.stop());
       };
 
       // بدء التسجيل
+      console.log("Starting MediaRecorder...");
       mediaRecorder.start(1000); // الحصول على البيانات كل ثانية
+      console.log("MediaRecorder state:", mediaRecorder.state);
 
       // تحديث واجهة المستخدم
       recordButton.style.display = "none";
@@ -169,19 +229,23 @@ function startRecording() {
 
       // تعيين وظيفة زر الإيقاف
       stopButton.onclick = () => {
+        console.log("Stop button clicked");
         if (mediaRecorder && mediaRecorder.state === "recording") {
+          console.log("Stopping MediaRecorder...");
           mediaRecorder.stop();
         }
       };
     })
     .catch(error => {
-      console.error("خطأ في التسجيل:", error);
+      console.error("Error accessing microphone:", error);
       alert("لم يتم السماح باستخدام الميكروفون. يرجى السماح للموقع باستخدام الميكروفون من إعدادات المتصفح.");
     });
 }
 
 // 🔄 **دالة إعادة التسجيل**
 retryButton.onclick = () => {
+  console.log("Retry button clicked");
+
   // مسح الصوت المسجل
   audioBlob = null;
   audioPreview.src = "";
@@ -191,19 +255,29 @@ retryButton.onclick = () => {
   submitBtn.style.display = "none";
   retryButton.style.display = "none";
 
+  // إيقاف الميكروفون إذا كان نشطًا
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+  }
+
   // إظهار زر التسجيل مرة أخرى
   recordButton.style.display = "block";
+
+  console.log("Reset recording UI");
 };
 
 
 
 function submitAnswer(answer, audioBlob) {
+  console.log("Submitting answer:", answer, "Audio:", audioBlob ? "Yes" : "No");
+
   const currentQuestion = questions[currentQuestionIndex];
   const formData = new FormData();
   formData.append("question", currentQuestion.question);
   formData.append("answer", answer);
 
   if (audioBlob) {
+    console.log("Audio blob size:", audioBlob.size, "Type:", audioBlob.type);
     // استخدام الامتداد الصحيح بناءً على نوع الصوت
     const fileExtension = audioBlob.type.includes('webm') ? 'webm' : 'wav';
     formData.append("audio", audioBlob, `recording.${fileExtension}`);
@@ -213,20 +287,37 @@ function submitAnswer(answer, audioBlob) {
   submitBtn.disabled = true;
   submitBtn.innerText = "جاري الإرسال...";
 
+  // طباعة محتويات FormData للتشخيص
+  console.log("Form data entries:");
+  for (let pair of formData.entries()) {
+    console.log(pair[0] + ': ' + (pair[1] instanceof Blob ? 'Blob' : pair[1]));
+  }
+
   fetch('/submit', {
     method: "POST",
     body: formData,
   })
     .then(response => {
-      // تعامل مع أي نوع من الردود (JSON أو نص)
+      console.log("Server response status:", response.status);
+
+      // تعامل مع أي نوع من الردود
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        console.error("Server returned error status:", response.status);
+        return response.text().then(text => {
+          console.error("Error response:", text);
+          throw new Error('Network response was not ok: ' + text);
+        });
       }
 
-      // تجاهل محتوى الرد، نحن نهتم فقط بنجاح العملية
-      return Promise.resolve();
+      return response.text();
     })
-    .then(() => {
+    .then(data => {
+      console.log("Submit success, response:", data);
+
+      // إعادة تعيين زر الإرسال
+      submitBtn.disabled = false;
+      submitBtn.innerText = "إرسال";
+
       // الانتقال إلى السؤال التالي أو إظهار رسالة الإكمال
       currentQuestionIndex++;
       if (currentQuestionIndex < questions.length) {
@@ -246,26 +337,14 @@ function submitAnswer(answer, audioBlob) {
       }
     })
     .catch(error => {
-      console.error("Error:", error);
+      console.error("Error during submission:", error);
 
-      // تجاهل رسالة الخطأ لأن الإرسال قد يكون نجح بالفعل
-      // الانتقال إلى السؤال التالي على أي حال
-      currentQuestionIndex++;
-      if (currentQuestionIndex < questions.length) {
-        showQuestion();
-      } else {
-        // إظهار رسالة الإكمال
-        questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
-        choicesElement.innerHTML = "";
+      // إعادة تعيين زر الإرسال
+      submitBtn.disabled = false;
+      submitBtn.innerText = "إرسال";
 
-        // إخفاء جميع عناصر واجهة المستخدم
-        extraInput.style.display = "none";
-        submitBtn.style.display = "none";
-        recordButton.style.display = "none";
-        stopButton.style.display = "none";
-        audioPreview.style.display = "none";
-        retryButton.style.display = "none";
-      }
+      // إظهار رسالة خطأ للمستخدم
+      alert("حدث خطأ أثناء إرسال الإجابة. يرجى المحاولة مرة أخرى.");
     });
 }
 

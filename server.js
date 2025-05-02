@@ -81,25 +81,41 @@ app.get('/responses', async (req, res) => {
 // Submit a new response
 app.post('/submit', upload.single('audio'), async (req, res) => {
   try {
+    console.log('📝 Received submission request');
+    console.log('📝 Request body:', req.body);
+
     const { question, answer } = req.body;
 
     if (!question) {
-      return res.status(400).json({ error: 'Question is required' });
+      console.error('❌ Question is missing in the request');
+      return res.status(400).send('Question is required');
     }
 
     let finalAnswer = answer || null; // الإجابة النصية
 
     if (req.file) {
       // تسجيل معلومات الملف للتشخيص
-      console.log('✅ File received:', {
+      console.log('🎵 Audio file received:', {
         filename: req.file.filename,
         originalname: req.file.originalname,
         mimetype: req.file.mimetype,
-        size: req.file.size
+        size: req.file.size,
+        path: req.file.path
       });
 
+      // التأكد من وجود المجلد
+      if (!fs.existsSync(req.file.path)) {
+        console.error('❌ File was not saved correctly:', req.file.path);
+      } else {
+        console.log('✅ File exists at path:', req.file.path);
+      }
+
       finalAnswer = `/uploads/${req.file.filename}`; // إذا وُجد ملف صوتي
+    } else {
+      console.log('📝 No audio file in the request');
     }
+
+    console.log('📝 Saving to database:', { question, finalAnswer });
 
     const result = await pool.query(
       'INSERT INTO responses (question, answer, timestamp) VALUES ($1, $2, NOW()) RETURNING *',
