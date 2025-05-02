@@ -391,11 +391,53 @@ function submitAnswer(answer, audioBlob) {
       if (currentQuestionIndex < questions.length) {
         showQuestion();
       } else {
-        // إظهار رسالة الإكمال
+        // إظهار رسالة الإكمال مع مساحة للملاحظات الخاصة
         questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
-        choicesElement.innerHTML = "";
 
-        // إخفاء جميع عناصر واجهة المستخدم
+        // إضافة مساحة للملاحظات الخاصة
+        choicesElement.innerHTML = `
+          <div class="notes-container">
+            <h3>ملاحظات خاصة ليك 💕</h3>
+            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي... رسالة، طلب، أمنية..."></textarea>
+            <button id="saveNotesBtn">حفظ الملاحظات</button>
+            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">تم حفظ ملاحظاتك بنجاح ❤️</p>
+          </div>
+        `;
+
+        // إضافة وظيفة لزر حفظ الملاحظات
+        const saveNotesBtn = document.getElementById("saveNotesBtn");
+        const personalNotes = document.getElementById("personalNotes");
+        const notesSavedMessage = document.getElementById("notesSavedMessage");
+
+        // استرجاع الملاحظات المحفوظة سابقًا
+        const savedNotes = localStorage.getItem('personalNotes');
+        if (savedNotes) {
+          personalNotes.value = savedNotes;
+        }
+
+        saveNotesBtn.onclick = () => {
+          localStorage.setItem('personalNotes', personalNotes.value);
+
+          // إظهار رسالة التأكيد
+          notesSavedMessage.style.display = "block";
+          setTimeout(() => {
+            notesSavedMessage.style.display = "none";
+          }, 3000);
+
+          // إرسال الملاحظات إلى الخادم (اختياري)
+          const formData = new FormData();
+          formData.append("question", "ملاحظات خاصة");
+          formData.append("answer", personalNotes.value);
+
+          fetch('/submit', {
+            method: "POST",
+            body: formData,
+          }).catch(error => {
+            console.error("Error saving notes:", error);
+          });
+        };
+
+        // إخفاء عناصر واجهة المستخدم الأخرى
         extraInput.style.display = "none";
         submitBtn.style.display = "none";
         recordButton.style.display = "none";
@@ -413,9 +455,218 @@ function submitAnswer(answer, audioBlob) {
 
       // إظهار رسالة خطأ للمستخدم
       alert("حدث خطأ أثناء إرسال الإجابة. يرجى المحاولة مرة أخرى.");
+
+      // على الرغم من الخطأ، ننتقل إلى الشاشة النهائية إذا كان هذا هو السؤال الأخير
+      if (currentQuestionIndex >= questions.length - 1) {
+        currentQuestionIndex = questions.length; // تأكد من أننا في نهاية الأسئلة
+
+        // إظهار رسالة الإكمال مع مساحة للملاحظات الخاصة
+        questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
+
+        // إضافة مساحة للملاحظات الخاصة
+        choicesElement.innerHTML = `
+          <div class="notes-container">
+            <h3>ملاحظات خاصة ليك 💕</h3>
+            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي... رسالة، طلب، أمنية..."></textarea>
+            <button id="saveNotesBtn">حفظ الملاحظات</button>
+            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">تم حفظ ملاحظاتك بنجاح ❤️</p>
+          </div>
+        `;
+
+        // إضافة وظيفة لزر حفظ الملاحظات
+        const saveNotesBtn = document.getElementById("saveNotesBtn");
+        const personalNotes = document.getElementById("personalNotes");
+        const notesSavedMessage = document.getElementById("notesSavedMessage");
+
+        // استرجاع الملاحظات المحفوظة سابقًا
+        const savedNotes = localStorage.getItem('personalNotes');
+        if (savedNotes) {
+          personalNotes.value = savedNotes;
+        }
+
+        saveNotesBtn.onclick = () => {
+          localStorage.setItem('personalNotes', personalNotes.value);
+
+          // إظهار رسالة التأكيد
+          notesSavedMessage.style.display = "block";
+          setTimeout(() => {
+            notesSavedMessage.style.display = "none";
+          }, 3000);
+        };
+
+        // إخفاء عناصر واجهة المستخدم الأخرى
+        extraInput.style.display = "none";
+        submitBtn.style.display = "none";
+        recordButton.style.display = "none";
+        stopButton.style.display = "none";
+        audioPreview.style.display = "none";
+        retryButton.style.display = "none";
+      }
     });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // تحميل الإعدادات المحفوظة
+  loadSettings();
+
+  // تهيئة وظائف الإعدادات
+  initSettings();
+
+  // عرض السؤال الأول
   showQuestion();
 });
+
+// وظائف الإعدادات
+function initSettings() {
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeButton = document.querySelector('.close-button');
+
+  // فتح مربع حوار الإعدادات
+  settingsBtn.addEventListener('click', () => {
+    settingsModal.style.display = 'block';
+  });
+
+  // إغلاق مربع حوار الإعدادات
+  closeButton.addEventListener('click', () => {
+    settingsModal.style.display = 'none';
+  });
+
+  // إغلاق مربع الحوار عند النقر خارجه
+  window.addEventListener('click', (event) => {
+    if (event.target === settingsModal) {
+      settingsModal.style.display = 'none';
+    }
+  });
+
+  // تفعيل خيارات لون الخلفية
+  const colorOptions = document.querySelectorAll('.color-option');
+  colorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const color = option.getAttribute('data-color');
+      document.body.style.backgroundColor = color;
+
+      // إزالة الفئة النشطة من جميع الخيارات
+      colorOptions.forEach(opt => opt.classList.remove('active'));
+
+      // إضافة الفئة النشطة للخيار المحدد
+      option.classList.add('active');
+
+      // حفظ الإعداد
+      localStorage.setItem('backgroundColor', color);
+    });
+  });
+
+  // تفعيل خيارات لون الأزرار
+  const buttonColorOptions = document.querySelectorAll('.button-color-option');
+  buttonColorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const color = option.getAttribute('data-color');
+
+      // تطبيق اللون على جميع الأزرار
+      document.querySelectorAll('button').forEach(button => {
+        if (!button.classList.contains('color-option') &&
+            !button.classList.contains('button-color-option') &&
+            !button.classList.contains('font-option')) {
+          button.style.backgroundColor = color;
+        }
+      });
+
+      // تحديث متغير CSS للون الأساسي
+      document.documentElement.style.setProperty('--primary-color', color);
+
+      // تحديث متغير RGB للون الأساسي
+      const rgbColor = hexToRgb(color);
+      if (rgbColor) {
+        document.documentElement.style.setProperty('--primary-color-rgb', `${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}`);
+      }
+
+      // إزالة الفئة النشطة من جميع الخيارات
+      buttonColorOptions.forEach(opt => opt.classList.remove('active'));
+
+      // إضافة الفئة النشطة للخيار المحدد
+      option.classList.add('active');
+
+      // حفظ الإعداد
+      localStorage.setItem('buttonColor', color);
+    });
+  });
+
+  // تفعيل خيارات الخط
+  const fontOptions = document.querySelectorAll('.font-option');
+  fontOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const font = option.getAttribute('data-font');
+      document.body.style.fontFamily = font;
+
+      // إزالة الفئة النشطة من جميع الخيارات
+      fontOptions.forEach(opt => opt.classList.remove('active'));
+
+      // إضافة الفئة النشطة للخيار المحدد
+      option.classList.add('active');
+
+      // حفظ الإعداد
+      localStorage.setItem('fontFamily', font);
+    });
+  });
+}
+
+// تحميل الإعدادات المحفوظة
+function loadSettings() {
+  // تحميل لون الخلفية
+  const backgroundColor = localStorage.getItem('backgroundColor');
+  if (backgroundColor) {
+    document.body.style.backgroundColor = backgroundColor;
+
+    // تحديد الخيار النشط
+    const colorOption = document.querySelector(`.color-option[data-color="${backgroundColor}"]`);
+    if (colorOption) {
+      colorOption.classList.add('active');
+    }
+  }
+
+  // تحميل لون الأزرار
+  const buttonColor = localStorage.getItem('buttonColor');
+  if (buttonColor) {
+    // تطبيق اللون على جميع الأزرار
+    document.querySelectorAll('button').forEach(button => {
+      if (!button.classList.contains('color-option') &&
+          !button.classList.contains('button-color-option') &&
+          !button.classList.contains('font-option')) {
+        button.style.backgroundColor = buttonColor;
+      }
+    });
+
+    // تحديث متغير CSS للون الأساسي
+    document.documentElement.style.setProperty('--primary-color', buttonColor);
+
+    // تحديد الخيار النشط
+    const buttonColorOption = document.querySelector(`.button-color-option[data-color="${buttonColor}"]`);
+    if (buttonColorOption) {
+      buttonColorOption.classList.add('active');
+    }
+  }
+
+  // تحميل نوع الخط
+  const fontFamily = localStorage.getItem('fontFamily');
+  if (fontFamily) {
+    document.body.style.fontFamily = fontFamily;
+
+    // تحديد الخيار النشط
+    const fontOption = document.querySelector(`.font-option[data-font="${fontFamily}"]`);
+    if (fontOption) {
+      fontOption.classList.add('active');
+    }
+  }
+}
+
+// دالة لتحويل اللون من تنسيق Hex إلى RGB
+function hexToRgb(hex) {
+  // التحقق من صحة تنسيق اللون
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
