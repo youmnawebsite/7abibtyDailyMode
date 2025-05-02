@@ -41,7 +41,7 @@ function showQuestion() {
     choicesElement.appendChild(button);
   });
 
-  // Reset all input fields and UI elements
+  // إعادة ضبط جميع حقول الإدخال وعناصر واجهة المستخدم
   extraInput.style.display = "none";
   extraInput.value = "";
   submitBtn.style.display = "none";
@@ -49,29 +49,15 @@ function showQuestion() {
   stopButton.style.display = "none";
   audioPreview.style.display = "none";
   audioPreview.src = "";
-
-  // Reset audio visualization elements
-  waveformElement.style.display = "none";
-  volumeMeter.style.display = "none";
-  volumeLevel.style.width = "0%";
   recordingTimer.style.display = "none";
   retryButton.style.display = "none";
 
-  // Clean up audio resources
+  // مسح موارد الصوت
   audioBlob = null;
 
-  // Clean up WaveSurfer if it exists
-  if (wavesurfer) {
-    wavesurfer.empty();
-  }
-
-  // Clean up audio context if it exists
-  if (audioContext && audioContext.state !== 'closed') {
-    try {
-      audioContext.close();
-    } catch (e) {
-      console.warn('Error closing audio context:', e);
-    }
+  // إيقاف الميكروفون إذا كان نشطًا
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
   }
 }
 
@@ -102,208 +88,110 @@ function handleAnswer(answer, showExtraInput, allowRecording) {
   }
 }
 
-let mediaStream;
-let audioContext;
-let analyser;
-let microphone;
-let wavesurfer;
-let animationId;
 const recordingTimer = document.getElementById("recordingTimer");
-const volumeMeter = document.getElementById("volume-meter");
-const volumeLevel = document.getElementById("volume-level");
-const waveformElement = document.getElementById("waveform");
-
-// Initialize WaveSurfer
-function initWaveSurfer() {
-  // Check if WaveSurfer is already initialized
-  if (wavesurfer) {
-    wavesurfer.destroy();
-  }
-
-  // Create WaveSurfer instance
-  wavesurfer = WaveSurfer.create({
-    container: waveformElement,
-    waveColor: '#ff6f91',
-    progressColor: '#ff8fa3',
-    cursorColor: 'transparent',
-    barWidth: 2,
-    barGap: 1,
-    height: 60,
-    barRadius: 2,
-    normalize: true
-  });
-}
+const retryButton = document.getElementById("retryButton");
 
 function startRecording() {
-  // Request audio with higher quality settings
-  navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      sampleRate: 48000,
-      channelCount: 1
-    }
-  }).then(stream => {
-    mediaStream = stream;
+  // طلب الإذن باستخدام الميكروفون بإعدادات بسيطة
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      mediaStream = stream;
 
-    // Initialize audio context for visualization
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    microphone = audioContext.createMediaStreamSource(stream);
-    microphone.connect(analyser);
-
-    // Configure analyser
-    analyser.fftSize = 256;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    // Initialize MediaRecorder with better audio quality
-    const options = {
-      mimeType: 'audio/webm;codecs=opus',
-      audioBitsPerSecond: 128000 // 128 kbps for better quality
-    };
-
-    // Fall back to default if the browser doesn't support the specified format
-    try {
-      mediaRecorder = new MediaRecorder(stream, options);
-    } catch (e) {
-      console.warn('Specified audio format not supported, using default format', e);
-      mediaRecorder = new MediaRecorder(stream);
-    }
-
-    const audioChunks = [];
-
-    // Show volume meter and waveform
-    volumeMeter.style.display = "block";
-    waveformElement.style.display = "block";
-
-    // Initialize WaveSurfer
-    initWaveSurfer();
-
-    // Start timer
-    let startTime = Date.now();
-    let elapsedSeconds = 0;
-
-    // Show timer
-    recordingTimer.innerText = "0:00";
-    recordingTimer.style.display = "block";
-
-    // Update timer every second
-    let timerInterval = setInterval(() => {
-      elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-      let minutes = Math.floor(elapsedSeconds / 60);
-      let seconds = elapsedSeconds % 60;
-      recordingTimer.innerText = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-    }, 1000);
-
-    // Update volume meter
-    function updateVolumeMeter() {
-      analyser.getByteFrequencyData(dataArray);
-
-      // Calculate volume level (average of frequency data)
-      let sum = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i];
+      // إنشاء مسجل الصوت
+      try {
+        // محاولة استخدام تنسيق أفضل للصوت
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm',
+          audioBitsPerSecond: 128000
+        });
+      } catch (e) {
+        console.warn('تنسيق الصوت المحدد غير مدعوم، استخدام التنسيق الافتراضي', e);
+        mediaRecorder = new MediaRecorder(stream);
       }
-      const average = sum / bufferLength;
 
-      // Update volume meter (scale to 0-100%)
-      const volumePercent = Math.min(100, average * 100 / 256);
-      volumeLevel.style.width = volumePercent + '%';
+      const audioChunks = [];
 
-      // Continue animation loop
-      animationId = requestAnimationFrame(updateVolumeMeter);
-    }
+      // إظهار مؤقت التسجيل
+      recordingTimer.innerText = "0:00";
+      recordingTimer.style.display = "block";
 
-    // Start volume meter animation
-    updateVolumeMeter();
+      // تحديث المؤقت كل ثانية
+      let startTime = Date.now();
+      let timerInterval = setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        recordingTimer.innerText = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+      }, 1000);
 
-    // Collect audio data
-    mediaRecorder.ondataavailable = event => {
-      if (event.data.size > 0) {
-        audioChunks.push(event.data);
-      }
-    };
+      // جمع بيانات الصوت
+      mediaRecorder.ondataavailable = event => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
 
-    // Handle recording stop
-    mediaRecorder.onstop = () => {
-      // Stop animations and timers
-      clearInterval(timerInterval);
-      cancelAnimationFrame(animationId);
-      recordingTimer.style.display = "none";
+      // معالجة إيقاف التسجيل
+      mediaRecorder.onstop = () => {
+        // إيقاف المؤقت
+        clearInterval(timerInterval);
+        recordingTimer.style.display = "none";
 
-      // Create audio blob with better format
-      audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+        // إنشاء ملف الصوت
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        audioBlob = new Blob(audioChunks, { type: mimeType });
 
-      // Load audio into WaveSurfer for visualization
-      const audioUrl = URL.createObjectURL(audioBlob);
-      audioPreview.src = audioUrl;
-      audioPreview.style.display = "block";
+        // عرض الصوت للمعاينة
+        const audioUrl = URL.createObjectURL(audioBlob);
+        audioPreview.src = audioUrl;
+        audioPreview.style.display = "block";
 
-      // Load audio into WaveSurfer
-      wavesurfer.load(audioUrl);
+        // تحديث واجهة المستخدم
+        stopButton.style.display = "none";
+        recordButton.style.display = "none";
+        retryButton.style.display = "block";
+        submitBtn.style.display = "block";
 
-      // Update UI
-      volumeMeter.style.display = "none";
-      stopButton.style.display = "none";
+        // تعيين وظيفة زر الإرسال
+        submitBtn.onclick = () => submitAnswer("تسجيل صوتي", audioBlob);
+
+        // إيقاف الميكروفون
+        mediaStream.getTracks().forEach(track => track.stop());
+      };
+
+      // بدء التسجيل
+      mediaRecorder.start(1000); // الحصول على البيانات كل ثانية
+
+      // تحديث واجهة المستخدم
       recordButton.style.display = "none";
-      retryButton.style.display = "block";
-      submitBtn.style.display = "block";
+      stopButton.style.display = "block";
+      retryButton.style.display = "none";
 
-      submitBtn.onclick = () => submitAnswer("تسجيل صوتي", audioBlob);
-
-      // Stop microphone
-      mediaStream.getTracks().forEach(track => track.stop());
-
-      // Clean up audio context
-      if (microphone) {
-        microphone.disconnect();
-      }
-      if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
-      }
-    };
-
-    // Start recording with a timeslice to get data more frequently
-    mediaRecorder.start(1000); // Get data every second
-
-    // Update UI
-    recordButton.style.display = "none";
-    stopButton.style.display = "block";
-    retryButton.style.display = "none";
-
-    stopButton.onclick = () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-      }
-    };
-  }).catch(error => {
-    console.error("خطأ في التسجيل:", error);
-    alert("لم يتم السماح باستخدام الميكروفون. تأكد من إعدادات المتصفح.");
-  });
+      // تعيين وظيفة زر الإيقاف
+      stopButton.onclick = () => {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+        }
+      };
+    })
+    .catch(error => {
+      console.error("خطأ في التسجيل:", error);
+      alert("لم يتم السماح باستخدام الميكروفون. يرجى السماح للموقع باستخدام الميكروفون من إعدادات المتصفح.");
+    });
 }
 
 // 🔄 **دالة إعادة التسجيل**
 retryButton.onclick = () => {
-  // Clean up audio resources
+  // مسح الصوت المسجل
   audioBlob = null;
   audioPreview.src = "";
   audioPreview.style.display = "none";
 
-  // Reset waveform display
-  waveformElement.style.display = "none";
-  if (wavesurfer) {
-    wavesurfer.empty();
-  }
-
-  // Reset UI elements
+  // إعادة ضبط عناصر واجهة المستخدم
   submitBtn.style.display = "none";
   retryButton.style.display = "none";
-  volumeMeter.style.display = "none";
-  volumeLevel.style.width = "0%";
 
-  // Show record button again
+  // إظهار زر التسجيل مرة أخرى
   recordButton.style.display = "block";
 };
 
@@ -316,12 +204,12 @@ function submitAnswer(answer, audioBlob) {
   formData.append("answer", answer);
 
   if (audioBlob) {
-    // Use the correct file extension based on the audio format
+    // استخدام الامتداد الصحيح بناءً على نوع الصوت
     const fileExtension = audioBlob.type.includes('webm') ? 'webm' : 'wav';
     formData.append("audio", audioBlob, `recording.${fileExtension}`);
   }
 
-  // Show loading state
+  // إظهار حالة التحميل
   submitBtn.disabled = true;
   submitBtn.innerText = "جاري الإرسال...";
 
@@ -336,45 +224,29 @@ function submitAnswer(answer, audioBlob) {
       return response.text();
     })
     .then(() => {
-      // Clean up audio resources
-      if (audioContext && audioContext.state !== 'closed') {
-        try {
-          audioContext.close();
-        } catch (e) {
-          console.warn('Error closing audio context:', e);
-        }
-      }
-
-      if (wavesurfer) {
-        wavesurfer.empty();
-      }
-
-      // Move to next question or show completion message
+      // الانتقال إلى السؤال التالي أو إظهار رسالة الإكمال
       currentQuestionIndex++;
       if (currentQuestionIndex < questions.length) {
         showQuestion();
       } else {
-        // Show completion message
+        // إظهار رسالة الإكمال
         questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
         choicesElement.innerHTML = "";
 
-        // Hide all UI elements
+        // إخفاء جميع عناصر واجهة المستخدم
         extraInput.style.display = "none";
         submitBtn.style.display = "none";
         recordButton.style.display = "none";
         stopButton.style.display = "none";
         audioPreview.style.display = "none";
         retryButton.style.display = "none";
-        waveformElement.style.display = "none";
-        volumeMeter.style.display = "none";
-        recordingTimer.style.display = "none";
       }
     })
     .catch(error => {
       console.error("Error:", error);
       alert("حدث خطأ أثناء إرسال الإجابة. يرجى المحاولة مرة أخرى.");
 
-      // Reset submit button
+      // إعادة ضبط زر الإرسال
       submitBtn.disabled = false;
       submitBtn.innerText = "إرسال";
     });

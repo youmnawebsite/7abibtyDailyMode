@@ -9,31 +9,27 @@ const port = process.env.PORT || 8080;
 const storage = multer.diskStorage({
   destination: 'uploads/',
   filename: (req, file, cb) => {
-    // Get the original file extension or default to .webm for audio files
+    // الحصول على امتداد الملف الأصلي أو استخدام امتداد افتراضي للملفات الصوتية
     let ext = path.extname(file.originalname);
     if (!ext && file.mimetype.startsWith('audio/')) {
-      // If no extension but it's an audio file, use the appropriate extension
+      // إذا لم يكن هناك امتداد ولكنه ملف صوتي، استخدم الامتداد المناسب
       if (file.mimetype.includes('webm')) {
         ext = '.webm';
       } else if (file.mimetype.includes('wav')) {
         ext = '.wav';
-      } else if (file.mimetype.includes('mp3')) {
-        ext = '.mp3';
-      } else if (file.mimetype.includes('ogg')) {
-        ext = '.ogg';
       } else {
-        ext = '.audio'; // Generic fallback
+        ext = '.audio'; // امتداد عام احتياطي
       }
     }
     cb(null, file.fieldname + '-' + Date.now() + ext);
   },
 });
 
-// Set file size limits and other options
+// تعيين حدود حجم الملف وخيارات أخرى
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    fileSize: 10 * 1024 * 1024, // الحد الأقصى لحجم الملف 10 ميجابايت
   }
 });
 

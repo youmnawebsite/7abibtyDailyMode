@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>مزاج حبيبتي</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js" type="module"></script>
 </head>
 <body>
   <div id="app">
@@ -15,16 +14,15 @@
     <button id="submitBtn" style="display: none;">إرسال</button>
     <button id="recordButton" style="display: none;">🎤 تسجيل</button>
     <button id="stopButton" style="display: none;">⏹️ إيقاف</button>
-
-    <!-- Audio visualization elements -->
-    <div id="waveform" style="display: none; margin-top: 15px; border-radius: 8px; overflow: hidden;"></div>
-    <div id="volume-meter" style="display: none; height: 20px; background-color: #f0f0f0; border-radius: 10px; margin: 10px 0; overflow: hidden;">
-      <div id="volume-level" style="height: 100%; width: 0%; background-color: #ff6f91; transition: width 0.1s;"></div>
-    </div>
-
     <audio id="audioPreview" controls style="display: none; width: 100%; margin-top: 10px;"></audio>
     <button id="retryButton" style="display: none;">🔄 إعادة التسجيل</button>
     <p id="recordingTimer" style="display: none; font-size: 18px; font-weight: bold; text-align: center; color: #ff4757;"></p>
+
+    <!-- عناصر إضافية للتوافق مع الكود -->
+    <div id="waveform" style="display: none;"></div>
+    <div id="volume-meter" style="display: none;">
+      <div id="volume-level"></div>
+    </div>
   </div>
 
   <script defer src="script.js"></script>
