@@ -10,9 +10,9 @@ const questions = [
   },
   {
     question: "عاوزة تقوليلي حاجة؟",
-    choices: ["آه عاوزة", "لأ مش عاوزة"],
-    extraInput: true, // تظهر خانة النص لو اختارت "آه"
-    allowRecording: true // السماح بتسجيل الصوت لكن فقط لما تختار "آه"
+    choices: ["عاوزة أكتب", "عاوزة أسجل صوت", "لأ مش عاوزة"],
+    extraInput: true, // تظهر خانة النص لو اختارت "عاوزة أكتب"
+    allowRecording: true // السماح بتسجيل الصوت لو اختارت "عاوزة أسجل صوت"
   }
 ];
 
@@ -33,16 +33,42 @@ let mediaStream;
 let audioBlob;
 
 function showQuestion() {
+  console.log("Showing question index:", currentQuestionIndex);
+
   const currentQuestion = questions[currentQuestionIndex];
   questionElement.innerText = currentQuestion.question;
 
   choicesElement.innerHTML = "";
-  currentQuestion.choices.forEach((choice, index) => {
-    const button = document.createElement("button");
-    button.innerText = choice;
-    button.addEventListener("click", () => handleAnswer(choice, currentQuestion.extraInput && index === 0, currentQuestion.allowRecording && index === 0));
-    choicesElement.appendChild(button);
-  });
+
+  // التعامل مع السؤال الأخير بشكل خاص
+  if (currentQuestionIndex === 2) { // السؤال الثالث (الأخير)
+    currentQuestion.choices.forEach((choice, index) => {
+      const button = document.createElement("button");
+      button.innerText = choice;
+
+      // تعيين وظيفة مختلفة لكل زر
+      if (choice === "عاوزة أكتب") {
+        button.addEventListener("click", () => handleAnswer(choice, true, false));
+      }
+      else if (choice === "عاوزة أسجل صوت") {
+        button.addEventListener("click", () => handleAnswer(choice, false, true));
+      }
+      else {
+        button.addEventListener("click", () => handleAnswer(choice, false, false));
+      }
+
+      choicesElement.appendChild(button);
+    });
+  }
+  else {
+    // التعامل مع الأسئلة الأخرى
+    currentQuestion.choices.forEach((choice, index) => {
+      const button = document.createElement("button");
+      button.innerText = choice;
+      button.addEventListener("click", () => handleAnswer(choice, currentQuestion.extraInput && index === 0, false));
+      choicesElement.appendChild(button);
+    });
+  }
 
   // إعادة ضبط جميع حقول الإدخال وعناصر واجهة المستخدم
   extraInput.style.display = "none";
@@ -62,9 +88,60 @@ function showQuestion() {
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
   }
+
+  console.log("Question setup complete");
 }
 
 function handleAnswer(answer, showExtraInput, allowRecording) {
+  console.log("Handle answer:", answer, "showExtraInput:", showExtraInput, "allowRecording:", allowRecording);
+
+  // التعامل مع السؤال الأخير بشكل خاص
+  if (currentQuestionIndex === 2) { // السؤال الثالث (الأخير)
+    if (answer === "عاوزة أكتب") {
+      // إظهار حقل الإدخال النصي
+      extraInput.style.display = "flex";
+      extraInput.style.width = "80%";
+      extraInput.style.padding = "10px";
+      extraInput.style.marginTop = "10px";
+      extraInput.style.borderRadius = "12px";
+      extraInput.style.fontFamily = "inherit";
+      extraInput.style.border = "2px solid #f8a7b3";
+      extraInput.style.justifyContent = "center";
+      extraInput.style.alignItems = "center";
+      extraInput.style.minHeight = "50px";
+
+      // إظهار زر الإرسال
+      submitBtn.style.display = "block";
+
+      // تعيين وظيفة زر الإرسال
+      submitBtn.onclick = function() {
+        // التحقق من أن المستخدم أدخل نصًا
+        if (extraInput.value.trim() === "") {
+          alert("الرجاء إدخال نص قبل الإرسال");
+          return;
+        }
+
+        // إرسال الإجابة مع النص الإضافي
+        submitAnswer(answer + " - " + extraInput.value, null);
+      };
+
+      return;
+    }
+    else if (answer === "عاوزة أسجل صوت") {
+      // إظهار زر التسجيل
+      recordButton.style.display = "block";
+      recordButton.onclick = startRecording;
+      return;
+    }
+    else {
+      // إذا اختار "لأ مش عاوزة"، إرسال الإجابة مباشرة
+      submitAnswer(answer, null);
+      return;
+    }
+  }
+
+  // التعامل مع الأسئلة الأخرى
+
   // إذا كان السؤال يتطلب إدخال نص إضافي
   if (showExtraInput) {
     // إظهار حقل الإدخال النصي
@@ -99,15 +176,6 @@ function handleAnswer(answer, showExtraInput, allowRecording) {
   } else {
     // إذا كان السؤال لا يتطلب إدخال نص إضافي، إرسال الإجابة مباشرة
     submitAnswer(answer, null);
-  }
-
-  // زر التسجيل يظهر فقط لو الإجابة "آه عاوزة" في السؤال الثالث
-  if (allowRecording && answer === "آه عاوزة") {
-    recordButton.style.display = "block";
-    recordButton.onclick = startRecording;
-
-    // عدم إرسال الإجابة تلقائيًا، ننتظر التسجيل
-    return;
   }
 }
 
