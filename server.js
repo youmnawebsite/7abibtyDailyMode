@@ -525,23 +525,23 @@ async function sendEmail(email, message) {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'your-email@gmail.com', // استبدل بعنوان بريدك الإلكتروني
-        pass: 'your-app-password' // استبدل بكلمة مرور التطبيق (ليس كلمة مرور حسابك)
+        user: 'mazenyousseff2@gmail.com', // استبدل بعنوان بريدك الإلكتروني
+        pass: '' // استبدل بكلمة مرور التطبيق (ليس كلمة مرور حسابك)
       }
     });
 
     // إعداد خيارات البريد الإلكتروني
     const mailOptions = {
-      from: 'your-email@gmail.com', // استبدل بعنوان بريدك الإلكتروني
+      from: 'mazenyousseff2@gmail.com', // استبدل بعنوان بريدك الإلكتروني
       to: email,
       subject: 'تذكير من موقع حبيبتي',
       text: message,
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
-          <h2 style="color: #e91e63;">تذكير من موقع حبيبتي</h2>
+          <h2 style="color: #e91e63;">تذكير من ويبسايت حبيبتي</h2>
           <p style="font-size: 16px; color: #333;">${message}</p>
           <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="font-size: 14px; color: #777;">هذا تذكير تلقائي من موقع حبيبتي اليومي</p>
+            <p style="font-size: 14px; color: #777;">ده تذكير تلقائي من ويبسايت حبيبتي </p>
           </div>
         </div>
       `
