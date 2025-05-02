@@ -663,6 +663,27 @@ tr:hover {
   font-weight: bold;
 }
 
+/* Reminder Status Messages */
+.reminder-status {
+  margin-top: 15px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  text-align: center;
+}
+
+.success-message {
+  color: var(--success-color);
+  font-weight: bold;
+  margin: 0;
+}
+
+.error-message {
+  color: var(--danger-color);
+  font-weight: bold;
+  margin: 0;
+}
+
 /* Backup Styles */
 .backup-section {
   background: var(--card-bg);

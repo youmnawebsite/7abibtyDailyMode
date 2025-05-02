@@ -1586,6 +1586,12 @@
         email: method === 'email' ? email : null
       };
 
+      // إظهار حالة الحفظ
+      const statusElement = document.createElement('div');
+      statusElement.className = 'reminder-status';
+      statusElement.innerHTML = '<p>جاري حفظ التذكير...</p>';
+      document.querySelector('.reminder-settings').appendChild(statusElement);
+
       // إرسال التذكير إلى الخادم
       fetch('/reminders', {
         method: 'POST',
@@ -1596,11 +1602,16 @@
       })
       .then(response => {
         if (!response.ok) {
-          throw new Error('فشل في حفظ التذكير');
+          return response.json().then(data => {
+            throw new Error(data.error || 'فشل في حفظ التذكير');
+          });
         }
         return response.json();
       })
       .then(data => {
+        // تحديث حالة الحفظ
+        statusElement.innerHTML = '<p class="success-message">تم حفظ التذكير بنجاح!</p>';
+
         // تحديث العرض
         renderReminders();
 
@@ -1611,10 +1622,22 @@
         document.getElementById('reminder-time').value = '';
         document.getElementById('reminder-message').value = '';
         document.getElementById('reminder-email').value = '';
+
+        // إزالة حالة الحفظ بعد فترة
+        setTimeout(() => {
+          statusElement.remove();
+        }, 3000);
       })
       .catch(error => {
         console.error('Error saving reminder:', error);
-        alert('حدث خطأ أثناء حفظ التذكير. يرجى المحاولة مرة أخرى.');
+
+        // تحديث حالة الحفظ
+        statusElement.innerHTML = `<p class="error-message">حدث خطأ أثناء حفظ التذكير: ${error.message}</p>`;
+
+        // إزالة حالة الحفظ بعد فترة
+        setTimeout(() => {
+          statusElement.remove();
+        }, 5000);
       });
     }
 

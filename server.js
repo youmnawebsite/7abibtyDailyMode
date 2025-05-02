@@ -281,21 +281,37 @@ createRemindersTable();
 // API لإدارة التذكيرات
 app.post('/reminders', async (req, res) => {
   try {
+    console.log('📝 Received reminder request:', req.body);
+
     const { time, message, method, email } = req.body;
 
     if (!time || !message || !method) {
+      console.error('❌ Missing required fields:', { time, message, method });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (method === 'email' && !email) {
+      console.error('❌ Email is required for email reminders');
       return res.status(400).json({ error: 'Email is required for email reminders' });
     }
 
+    // التحقق من وجود جدول التذكيرات
+    try {
+      await pool.query('SELECT 1 FROM reminders LIMIT 1');
+    } catch (tableErr) {
+      console.error('❌ Reminders table might not exist, creating it now...');
+      await createRemindersTable();
+    }
+
     // تخزين التذكير في قاعدة البيانات
+    console.log('📝 Saving reminder to database:', { time, message, method, email: email || null });
+
     const result = await pool.query(
       'INSERT INTO reminders (time, message, method, email) VALUES ($1, $2, $3, $4) RETURNING *',
       [time, message, method, email || null]
     );
+
+    console.log('✅ Reminder saved successfully:', result.rows[0]);
 
     res.status(200).json({
       message: 'Reminder saved successfully',
@@ -303,7 +319,23 @@ app.post('/reminders', async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Error saving reminder:', err);
-    res.status(500).json({ error: 'Failed to save reminder' });
+
+    // معالجة أكثر تفصيلاً للأخطاء
+    if (err.code === '42P01') {
+      // جدول غير موجود
+      try {
+        await createRemindersTable();
+        return res.status(500).json({ error: 'Table was missing but has been created. Please try again.' });
+      } catch (createErr) {
+        console.error('❌ Error creating reminders table:', createErr);
+        return res.status(500).json({ error: 'Failed to create reminders table' });
+      }
+    } else if (err.code === '23505') {
+      // تعارض المفتاح الأساسي
+      return res.status(400).json({ error: 'A reminder with this ID already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to save reminder' });
+    }
   }
 });
 
@@ -485,9 +517,49 @@ async function sendNotification(subscription, message) {
 // إرسال بريد إلكتروني
 async function sendEmail(email, message) {
   try {
-    // هنا يمكنك استخدام مكتبة لإرسال البريد الإلكتروني مثل nodemailer
-    // في هذا المثال، سنقوم فقط بتسجيل الرسالة
-    console.log(`✅ Email sent to ${email}: ${message}`);
+    // استخدام مكتبة nodemailer لإرسال البريد الإلكتروني
+    const nodemailer = require('nodemailer');
+
+    // إنشاء ناقل بريد إلكتروني باستخدام خدمة Gmail
+    // ملاحظة: في بيئة الإنتاج، يجب استخدام متغيرات بيئية لتخزين بيانات الاعتماد
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: 'your-email@gmail.com', // استبدل بعنوان بريدك الإلكتروني
+        pass: 'your-app-password' // استبدل بكلمة مرور التطبيق (ليس كلمة مرور حسابك)
+      }
+    });
+
+    // إعداد خيارات البريد الإلكتروني
+    const mailOptions = {
+      from: 'your-email@gmail.com', // استبدل بعنوان بريدك الإلكتروني
+      to: email,
+      subject: 'تذكير من موقع حبيبتي',
+      text: message,
+      html: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; border-radius: 10px;">
+          <h2 style="color: #e91e63;">تذكير من موقع حبيبتي</h2>
+          <p style="font-size: 16px; color: #333;">${message}</p>
+          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <p style="font-size: 14px; color: #777;">هذا تذكير تلقائي من موقع حبيبتي اليومي</p>
+          </div>
+        </div>
+      `
+    };
+
+    // في الوقت الحالي، سنقوم فقط بتسجيل الرسالة بدلاً من إرسالها فعليًا
+    // لإرسال البريد الإلكتروني فعليًا، قم بإزالة التعليق عن الكود التالي
+    // وتكوين بيانات اعتماد البريد الإلكتروني الخاصة بك
+
+    /*
+    // إرسال البريد الإلكتروني
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent:', info.messageId);
+    */
+
+    // تسجيل الرسالة فقط (للاختبار)
+    console.log(`✅ Email would be sent to ${email}: ${message}`);
+
     return true;
   } catch (err) {
     console.error('❌ Error sending email:', err);
