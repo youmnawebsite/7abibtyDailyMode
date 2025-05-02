@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Mada:wght@200..900&family=Rubik:ital,wght@0,300..900;1,300..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      color: #495057;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: white;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      background: linear-gradient(135deg, #6c5ce7, #81ecec);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 2.5rem;
+      margin: 0;
+    }
+
+    .controls {
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .controls input,
+    .controls button {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ced4da;
+      outline: none;
+      font-size: 1rem;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .controls button {
+      background: #6c5ce7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .controls button:hover {
+      background: #5a4ecf;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table thead {
+      background: #6c5ce7;
+      color: white;
+    }
+
+    th, td {
+      font-family: 'Tajawal', sans-serif;
+      padding: 15px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    tr:hover {
+      background: #f1f3f5;
+    }
+
+    .stats {
+      padding: 20px;
+    }
+
+    .stats h2 {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    .stats ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .stats li {
+      background: #81ecec;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      color: #2d3436;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .select-response, #select-all {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 300px;
+      text-align: center;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ced4da;
+    }
+
+    .modal-content button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: #6c5ce7;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .modal-content button:hover {
+      background: #5a4ecf;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search by question or answer..." oninput="filterResponses()">
+      <input type="date" id="filter-date" onchange="filterResponses()">
+      <button onclick="clearFilters()">Clear Filters</button>
+      <button onclick="deleteAllResponses()">Delete All Responses</button>
+      <button onclick="exportToCSV()">Export to CSV</button>
+      <button onclick="deleteSelectedResponses()">Delete Selected</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+          <th>ID</th>
+          <th>Question</th>
+          <th>Answer</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody id="responses">
+        <!-- Responses will be loaded here -->
+      </tbody>
+    </table>
+    <div class="stats">
+      <h2>Statistics</h2>
+      <ul id="stats-list"></ul>
+    </div>
+  </div>
+
+  <!-- Modal for updating response -->
+<!-- في ملف admin.html -->
+<div class="modal" id="updateModal">
+  <div class="modal-content">
+    <h2>Update Answer</h2>
+    <input type="text" id="update-id" placeholder="New ID">
+    <input type="text" id="update-answer" placeholder="New answer">
+    <input type="datetime-local" id="update-timestamp">
+    <button onclick="submitUpdate()">Update</button>
+    <button onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+  <script>
+    let allResponses = [];
+    let currentResponseId = null;
+
+    function loadResponses() {
+      fetch('/responses')
+        .then(res => res.json())
+        .then(data => {
+          allResponses = data;
+          renderResponses(data);
+          updateStats();
+        });
+    }
+    function isAudioFile(answer) {
+  return /\.(mp3|wav|ogg|webm|audio)$/i.test(answer);
+}
+
+// Get the appropriate MIME type for audio files
+function getAudioMimeType(filePath) {
+  if (filePath.endsWith('.mp3')) return 'audio/mpeg';
+  if (filePath.endsWith('.wav')) return 'audio/wav';
+  if (filePath.endsWith('.ogg')) return 'audio/ogg';
+  if (filePath.endsWith('.webm')) return 'audio/webm';
+  return 'audio/mpeg'; // Default fallback
+}
+
+// في الجزء الخاص بعرض البيانات
+function renderResponses(data) {
+  const tbody = document.getElementById('responses');
+  tbody.innerHTML = '';
+  data.forEach(response => {
+    const row = document.createElement('tr');
+    const formattedDate = new Date(response.timestamp).toLocaleString(); // استخدام toLocaleString بدلاً من format
+
+    // Check if it's an audio file
+    const isAudio = isAudioFile(response.answer);
+    const audioMimeType = isAudio ? getAudioMimeType(response.answer) : '';
+
+    row.innerHTML = `
+    <td><input type="checkbox" class="select-response" value="${response.id}"></td>
+      <td>${response.id}</td>
+      <td>${response.question}</td>
+      <td>
+        ${isAudio ?
+          `<div style="display: flex; flex-direction: column; align-items: center;">
+            <audio controls style="width: 100%; margin-bottom: 5px;">
+              <source src="${response.answer}" type="${audioMimeType}">
+              Your browser does not support the audio tag.
+            </audio>
+            <a href="${response.answer}" download style="color: #3498db; text-decoration: underline; font-size: 12px;">Download Audio</a>
+          </div>`
+          : response.answer}
+      </td>
+      <td>${formattedDate}</td>
+      <td>
+        <button style="font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif; border-radius: 8px; padding: 10px; background: #e74c3c; color: white; border: none; cursor: pointer; transition: 0.3s;" onclick="deleteResponse(${response.id})">Delete</button>
+        <button style="font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif; border-radius: 8px; padding: 10px; background: #3498db; color: white; border: none; cursor: pointer; transition: 0.3s;" onclick="openUpdateModal(${response.id})">Update</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+    function filterResponses() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const filterDate = document.getElementById('filter-date').value;
+
+      let filtered = allResponses;
+
+      if (search) {
+        filtered = filtered.filter(
+          response =>
+            response.question.toLowerCase().includes(search) ||
+            response.answer.toLowerCase().includes(search)
+        );
+      }
+
+      if (filterDate) {
+        filtered = filtered.filter(response =>
+          response.timestamp.startsWith(filterDate)
+        );
+      }
+
+      renderResponses(filtered);
+    }
+
+    function clearFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('filter-date').value = '';
+      renderResponses(allResponses);
+    }
+
+    function deleteResponse(id) {
+      if (!confirm('Are you sure you want to delete this response?')) return;
+      fetch(`/responses/${id}`, { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) {
+            alert('Response deleted!');
+            loadResponses();
+          }
+        });
+    }
+
+    function deleteAllResponses() {
+      if (!confirm('Are you sure you want to delete all responses?')) return;
+      fetch('/responses', { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) {
+            alert('All responses deleted!');
+            loadResponses();
+          }
+        });
+    }
+
+    function openUpdateModal(id) {
+      currentResponseId = id;
+      document.getElementById('updateModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('updateModal').style.display = 'none';
+    }
+
+    function submitUpdate() {
+  const newResponseId = document.getElementById('update-id').value;
+  const newAnswer = document.getElementById('update-answer').value;
+  const newTimestamp = document.getElementById('update-timestamp').value;
+
+  if (!newAnswer && !newTimestamp && !newResponseId) {
+    alert('Please enter a new answer.');
+    return;
+  }
+
+  fetch(`/responses/${currentResponseId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ answer: newAnswer, timestamp: newTimestamp , id: newResponseId})
+  })
+    .then(res => {
+      if (res.ok) {
+        alert('Response updated!');
+        closeModal();
+        loadResponses();
+      }
+    });
+}
+
+    function exportToCSV() {
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + allResponses.map(response => `${response.id},${response.question},${response.answer},${response.timestamp}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "responses.csv");
+      document.body.appendChild(link);
+      link.click();
+    }
+
+    function updateStats() {
+      const statsList = document.getElementById('stats-list');
+      statsList.innerHTML = '';
+
+      const questionCounts = allResponses.reduce((acc, response) => {
+        acc[response.question] = (acc[response.question] || 0) + 1;
+        return acc;
+      }, {});
+
+      for (const [question, count] of Object.entries(questionCounts)) {
+        const li = document.createElement('li');
+        li.textContent = `${question}: ${count} اجابه`;
+        statsList.appendChild(li);
+      }
+    }
+
+    function deleteSelectedResponses() {
+  const selected = Array.from(document.querySelectorAll('.select-response:checked')).map(cb => cb.value);
+  if (selected.length === 0) {
+    alert('No responses selected.');
+    return;
+  }
+  if (!confirm('Are you sure you want to delete selected responses?')) return;
+
+  Promise.all(selected.map(id => fetch(`/responses/${id}`, { method: 'DELETE' })))
+    .then(() => {
+      alert('Selected responses deleted!');
+      loadResponses();
+    });
+}
+
+function toggleSelectAll() {
+  const checkboxes = document.querySelectorAll('.select-response');
+  const selectAll = document.getElementById('select-all').checked;
+  checkboxes.forEach(cb => cb.checked = selectAll);
+}
+
+    loadResponses();
+  </script>
+</body>
+</html>
