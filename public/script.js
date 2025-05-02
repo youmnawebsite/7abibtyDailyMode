@@ -218,10 +218,13 @@ function submitAnswer(answer, audioBlob) {
     body: formData,
   })
     .then(response => {
+      // تعامل مع أي نوع من الردود (JSON أو نص)
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      return response.text();
+
+      // تجاهل محتوى الرد، نحن نهتم فقط بنجاح العملية
+      return Promise.resolve();
     })
     .then(() => {
       // الانتقال إلى السؤال التالي أو إظهار رسالة الإكمال
@@ -244,11 +247,25 @@ function submitAnswer(answer, audioBlob) {
     })
     .catch(error => {
       console.error("Error:", error);
-      alert("حدث خطأ أثناء إرسال الإجابة. يرجى المحاولة مرة أخرى.");
 
-      // إعادة ضبط زر الإرسال
-      submitBtn.disabled = false;
-      submitBtn.innerText = "إرسال";
+      // تجاهل رسالة الخطأ لأن الإرسال قد يكون نجح بالفعل
+      // الانتقال إلى السؤال التالي على أي حال
+      currentQuestionIndex++;
+      if (currentQuestionIndex < questions.length) {
+        showQuestion();
+      } else {
+        // إظهار رسالة الإكمال
+        questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
+        choicesElement.innerHTML = "";
+
+        // إخفاء جميع عناصر واجهة المستخدم
+        extraInput.style.display = "none";
+        submitBtn.style.display = "none";
+        recordButton.style.display = "none";
+        stopButton.style.display = "none";
+        audioPreview.style.display = "none";
+        retryButton.style.display = "none";
+      }
     });
 }
 

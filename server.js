@@ -3,6 +3,14 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
+const fs = require('fs');
+
+// التأكد من وجود مجلد uploads
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('✅ Created uploads directory');
+}
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -82,6 +90,14 @@ app.post('/submit', upload.single('audio'), async (req, res) => {
     let finalAnswer = answer || null; // الإجابة النصية
 
     if (req.file) {
+      // تسجيل معلومات الملف للتشخيص
+      console.log('✅ File received:', {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      });
+
       finalAnswer = `/uploads/${req.file.filename}`; // إذا وُجد ملف صوتي
     }
 
@@ -90,10 +106,14 @@ app.post('/submit', upload.single('audio'), async (req, res) => {
       [question, finalAnswer]
     );
 
-    res.status(200).json({ message: '✅ Response saved successfully', response: result.rows[0] });
+    console.log('✅ Response saved successfully:', result.rows[0]);
+
+    // إرسال استجابة بسيطة لتجنب مشاكل التحليل في العميل
+    res.status(200).send('OK');
   } catch (err) {
     console.error('❌ Error saving response:', err);
-    res.status(500).json({ error: 'Error saving response' });
+    // إرسال استجابة بسيطة لتجنب مشاكل التحليل في العميل
+    res.status(500).send('Error');
   }
 });
 

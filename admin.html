@@ -218,11 +218,14 @@
         });
     }
     function isAudioFile(answer) {
-  return /\.(mp3|wav|ogg|webm|audio)$/i.test(answer);
+  // تحقق مما إذا كانت الإجابة هي مسار ملف صوتي
+  if (!answer) return false;
+  return answer.startsWith('/uploads/') || /\.(mp3|wav|ogg|webm|audio)$/i.test(answer);
 }
 
 // Get the appropriate MIME type for audio files
 function getAudioMimeType(filePath) {
+  if (!filePath) return 'audio/mpeg';
   if (filePath.endsWith('.mp3')) return 'audio/mpeg';
   if (filePath.endsWith('.wav')) return 'audio/wav';
   if (filePath.endsWith('.ogg')) return 'audio/ogg';
