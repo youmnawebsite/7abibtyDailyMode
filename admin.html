@@ -1497,30 +1497,63 @@
 
     // عرض التذكيرات
     function renderReminders() {
-      const container = document.getElementById('reminders-container');
-      container.innerHTML = '';
+      const container = document.getElementById('active-reminders');
+      container.innerHTML = '<p>جاري تحميل التذكيرات...</p>';
 
-      if (reminders.length === 0) {
-        container.innerHTML = '<p>لا توجد تذكيرات مجدولة.</p>';
-        return;
+      // جلب التذكيرات من الخادم
+      fetch('/reminders')
+        .then(response => response.json())
+        .then(data => {
+          if (data.length === 0) {
+            container.innerHTML = '<p>لا توجد تذكيرات نشطة حاليًا.</p>';
+            return;
+          }
+
+          let html = '<ul class="reminders-list">';
+
+          data.forEach(reminder => {
+            // تنسيق الوقت
+            const timeFormatted = formatTime(reminder.time);
+
+            html += `
+              <li>
+                <div class="reminder-item">
+                  <div class="reminder-details">
+                    <p><strong>الوقت:</strong> ${timeFormatted}</p>
+                    <p><strong>الرسالة:</strong> ${reminder.message}</p>
+                    <p><strong>الطريقة:</strong> ${reminder.method === 'notification' ? 'إشعار المتصفح' : 'بريد إلكتروني'}</p>
+                    ${reminder.method === 'email' ? `<p><strong>البريد الإلكتروني:</strong> ${reminder.email}</p>` : ''}
+                    <p><strong>الحالة:</strong> <span class="${reminder.active ? 'active-status' : 'inactive-status'}">${reminder.active ? 'نشط' : 'غير نشط'}</span></p>
+                  </div>
+                  <div class="reminder-actions">
+                    <button class="delete-btn" onclick="deleteReminder(${reminder.id})">حذف</button>
+                    <button class="toggle-btn" onclick="toggleReminderStatus(${reminder.id}, ${!reminder.active})">${reminder.active ? 'إيقاف' : 'تنشيط'}</button>
+                    <button class="test-btn" onclick="testReminder(${reminder.id})">اختبار</button>
+                  </div>
+                </div>
+              </li>
+            `;
+          });
+
+          html += '</ul>';
+          container.innerHTML = html;
+        })
+        .catch(error => {
+          console.error('Error loading reminders:', error);
+          container.innerHTML = '<p>حدث خطأ أثناء تحميل التذكيرات. يرجى المحاولة مرة أخرى.</p>';
+        });
+    }
+
+    // تنسيق الوقت
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+
+      // إذا كان الوقت بتنسيق "HH:MM:SS"، نقوم بتحويله إلى "HH:MM"
+      if (timeStr.length > 5) {
+        return timeStr.substring(0, 5);
       }
 
-      reminders.forEach((reminder, index) => {
-        const reminderItem = document.createElement('div');
-        reminderItem.className = 'reminder-item';
-
-        reminderItem.innerHTML = `
-          <div>
-            <strong>الوقت:</strong> ${reminder.time} |
-            <strong>الطريقة:</strong> ${reminder.method === 'email' ? 'البريد الإلكتروني' : 'إشعار المتصفح'} |
-            <strong>الرسالة:</strong> ${reminder.message}
-            ${reminder.email ? `<br><strong>البريد:</strong> ${reminder.email}` : ''}
-          </div>
-          <button onclick="deleteReminder(${index})">حذف</button>
-        `;
-
-        container.appendChild(reminderItem);
-      });
+      return timeStr;
     }
 
     // حفظ تذكير جديد
@@ -1550,33 +1583,107 @@
         time,
         message,
         method,
-        email: method === 'email' ? email : null,
-        active: true
+        email: method === 'email' ? email : null
       };
 
-      // إضافة التذكير إلى القائمة
-      reminders.push(newReminder);
+      // إرسال التذكير إلى الخادم
+      fetch('/reminders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newReminder)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('فشل في حفظ التذكير');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // تحديث العرض
+        renderReminders();
 
-      // حفظ التذكيرات
-      localStorage.setItem('reminders', JSON.stringify(reminders));
+        // إظهار رسالة التأكيد
+        document.getElementById('reminderModal').style.display = 'flex';
 
-      // تحديث العرض
-      renderReminders();
-
-      // إظهار رسالة التأكيد
-      document.getElementById('reminderModal').style.display = 'flex';
-
-      // إرسال التذكير إلى الخادم (يمكن إضافة هذه الوظيفة لاحقًا)
-      // sendReminderToServer(newReminder);
+        // مسح النموذج
+        document.getElementById('reminder-time').value = '';
+        document.getElementById('reminder-message').value = '';
+        document.getElementById('reminder-email').value = '';
+      })
+      .catch(error => {
+        console.error('Error saving reminder:', error);
+        alert('حدث خطأ أثناء حفظ التذكير. يرجى المحاولة مرة أخرى.');
+      });
     }
 
     // حذف تذكير
-    function deleteReminder(index) {
+    function deleteReminder(id) {
       if (!confirm('هل أنت متأكد من حذف هذا التذكير؟')) return;
 
-      reminders.splice(index, 1);
-      localStorage.setItem('reminders', JSON.stringify(reminders));
-      renderReminders();
+      fetch(`/reminders/${id}`, {
+        method: 'DELETE'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('فشل في حذف التذكير');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // تحديث العرض
+        renderReminders();
+      })
+      .catch(error => {
+        console.error('Error deleting reminder:', error);
+        alert('حدث خطأ أثناء حذف التذكير. يرجى المحاولة مرة أخرى.');
+      });
+    }
+
+    // تبديل حالة التذكير (نشط/غير نشط)
+    function toggleReminderStatus(id, active) {
+      fetch(`/reminders/${id}/toggle`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ active })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('فشل في تغيير حالة التذكير');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // تحديث العرض
+        renderReminders();
+      })
+      .catch(error => {
+        console.error('Error toggling reminder status:', error);
+        alert('حدث خطأ أثناء تغيير حالة التذكير. يرجى المحاولة مرة أخرى.');
+      });
+    }
+
+    // اختبار التذكير
+    function testReminder(id) {
+      fetch(`/reminders/${id}/test`, {
+        method: 'POST'
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('فشل في اختبار التذكير');
+        }
+        return response.json();
+      })
+      .then(data => {
+        alert('تم إرسال التذكير بنجاح!');
+      })
+      .catch(error => {
+        console.error('Error testing reminder:', error);
+        alert('حدث خطأ أثناء اختبار التذكير. يرجى المحاولة مرة أخرى.');
+      });
     }
 
     // إغلاق مربع حوار التذكير

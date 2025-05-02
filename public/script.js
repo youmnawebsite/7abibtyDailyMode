@@ -397,7 +397,7 @@ function submitAnswer(answer, audioBlob) {
         // إضافة مساحة للملاحظات الخاصة
         choicesElement.innerHTML = `
           <div class="notes-container">
-            <h3>ملاحظات خاصة ليك 💕</h3>
+            <h3>عشان اي حاجه عاوزه توصليهالي او تطلبيها مني💕</h3>
             <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي كلام او طلب او أمنية"></textarea>
             <button id="saveNotesBtn">ابعتي</button>
             <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">اتبعتت يروحي ❤️</p>
@@ -426,7 +426,7 @@ function submitAnswer(answer, audioBlob) {
 
           // إرسال الملاحظات إلى الخادم (اختياري)
           const formData = new FormData();
-          formData.append("question", "ملاحظات خاصة");
+          formData.append("question", "مسدجات حبيبتي");
           formData.append("answer", personalNotes.value);
 
           fetch('/submit', {
@@ -466,13 +466,12 @@ function submitAnswer(answer, audioBlob) {
         // إضافة مساحة للملاحظات الخاصة
         choicesElement.innerHTML = `
           <div class="notes-container">
-            <h3>ملاحظات خاصة ليك 💕</h3>
-            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي... رسالة، طلب، أمنية..."></textarea>
-            <button id="saveNotesBtn">حفظ الملاحظات</button>
-            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">تم حفظ ملاحظاتك بنجاح ❤️</p>
+            <h3>عشان اي حاجه عاوزه توصليهالي او تطلبيها مني💕</h3>
+            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي كلام او طلب او أمنية"></textarea>
+            <button id="saveNotesBtn">ابعتي</button>
+            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">اتبعتت يروحي ❤️</p>
           </div>
         `;
-
         // إضافة وظيفة لزر حفظ الملاحظات
         const saveNotesBtn = document.getElementById("saveNotesBtn");
         const personalNotes = document.getElementById("personalNotes");

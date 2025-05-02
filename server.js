@@ -255,6 +255,29 @@ app.put('/responses/:id', async (req, res) => {
   }
 });
 
+// إنشاء جدول التذكيرات إذا لم يكن موجودًا
+async function createRemindersTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reminders (
+        id SERIAL PRIMARY KEY,
+        time TIME NOT NULL,
+        message TEXT NOT NULL,
+        method VARCHAR(20) NOT NULL,
+        email VARCHAR(100),
+        active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Reminders table created or already exists');
+  } catch (err) {
+    console.error('❌ Error creating reminders table:', err);
+  }
+}
+
+// إنشاء جدول التذكيرات عند بدء التطبيق
+createRemindersTable();
+
 // API لإدارة التذكيرات
 app.post('/reminders', async (req, res) => {
   try {
@@ -268,15 +291,137 @@ app.post('/reminders', async (req, res) => {
       return res.status(400).json({ error: 'Email is required for email reminders' });
     }
 
-    // في الإصدار الحالي، سنقوم فقط بتخزين التذكيرات في الذاكرة
-    // في الإصدار المستقبلي، يمكن تخزينها في قاعدة البيانات
+    // تخزين التذكير في قاعدة البيانات
+    const result = await pool.query(
+      'INSERT INTO reminders (time, message, method, email) VALUES ($1, $2, $3, $4) RETURNING *',
+      [time, message, method, email || null]
+    );
 
-    res.status(200).json({ message: 'Reminder saved successfully' });
+    res.status(200).json({
+      message: 'Reminder saved successfully',
+      reminder: result.rows[0]
+    });
   } catch (err) {
     console.error('❌ Error saving reminder:', err);
     res.status(500).json({ error: 'Failed to save reminder' });
   }
 });
+
+// الحصول على جميع التذكيرات
+app.get('/reminders', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM reminders ORDER BY time');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('❌ Error fetching reminders:', err);
+    res.status(500).json({ error: 'Failed to fetch reminders' });
+  }
+});
+
+// حذف تذكير
+app.delete('/reminders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM reminders WHERE id = $1', [id]);
+    res.status(200).json({ message: 'Reminder deleted successfully' });
+  } catch (err) {
+    console.error('❌ Error deleting reminder:', err);
+    res.status(500).json({ error: 'Failed to delete reminder' });
+  }
+});
+
+// تبديل حالة التذكير (نشط/غير نشط)
+app.put('/reminders/:id/toggle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { active } = req.body;
+
+    if (active === undefined) {
+      return res.status(400).json({ error: 'Active status is required' });
+    }
+
+    await pool.query('UPDATE reminders SET active = $1 WHERE id = $2', [active, id]);
+    res.status(200).json({ message: 'Reminder status updated successfully' });
+  } catch (err) {
+    console.error('❌ Error updating reminder status:', err);
+    res.status(500).json({ error: 'Failed to update reminder status' });
+  }
+});
+
+// اختبار التذكير
+app.post('/reminders/:id/test', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // الحصول على التذكير
+    const result = await pool.query('SELECT * FROM reminders WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reminder not found' });
+    }
+
+    const reminder = result.rows[0];
+
+    // إرسال التذكير
+    if (reminder.method === 'notification') {
+      // الحصول على جميع اشتراكات الإشعارات
+      const subscriptionsResult = await pool.query('SELECT * FROM push_subscriptions');
+
+      let sent = false;
+      for (const sub of subscriptionsResult.rows) {
+        try {
+          const subscription = JSON.parse(sub.subscription);
+          const success = await sendNotification(subscription, reminder.message);
+          if (success) {
+            sent = true;
+          }
+        } catch (err) {
+          console.error('❌ Error parsing subscription:', err);
+        }
+      }
+
+      if (!sent && subscriptionsResult.rows.length > 0) {
+        return res.status(500).json({ error: 'Failed to send notification' });
+      }
+
+      if (subscriptionsResult.rows.length === 0) {
+        return res.status(400).json({ error: 'No push subscriptions found' });
+      }
+    } else if (reminder.method === 'email' && reminder.email) {
+      const success = await sendEmail(reminder.email, reminder.message);
+
+      if (!success) {
+        return res.status(500).json({ error: 'Failed to send email' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Invalid reminder method' });
+    }
+
+    res.status(200).json({ message: 'Reminder sent successfully' });
+  } catch (err) {
+    console.error('❌ Error testing reminder:', err);
+    res.status(500).json({ error: 'Failed to test reminder' });
+  }
+});
+
+// إنشاء جدول اشتراكات الإشعارات إذا لم يكن موجودًا
+async function createSubscriptionsTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        subscription TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('✅ Push subscriptions table created or already exists');
+  } catch (err) {
+    console.error('❌ Error creating push subscriptions table:', err);
+  }
+}
+
+// إنشاء جدول اشتراكات الإشعارات عند بدء التطبيق
+createSubscriptionsTable();
 
 // API لإرسال إشعارات المتصفح
 app.get('/push-subscription', (req, res) => {
@@ -285,10 +430,115 @@ app.get('/push-subscription', (req, res) => {
   });
 });
 
-app.post('/push-subscription', (req, res) => {
-  // في الإصدار المستقبلي، يمكن تخزين اشتراكات الإشعارات في قاعدة البيانات
-  res.status(200).json({ message: 'Subscription saved successfully' });
+// تخزين اشتراك الإشعارات
+app.post('/push-subscription', async (req, res) => {
+  try {
+    const subscription = req.body;
+
+    if (!subscription) {
+      return res.status(400).json({ error: 'Subscription data is required' });
+    }
+
+    // تخزين الاشتراك في قاعدة البيانات
+    await pool.query(
+      'INSERT INTO push_subscriptions (subscription) VALUES ($1)',
+      [JSON.stringify(subscription)]
+    );
+
+    res.status(200).json({ message: 'Subscription saved successfully' });
+  } catch (err) {
+    console.error('❌ Error saving subscription:', err);
+    res.status(500).json({ error: 'Failed to save subscription' });
+  }
 });
+
+// إرسال إشعار
+async function sendNotification(subscription, message) {
+  try {
+    const webpush = require('web-push');
+
+    // تكوين مفاتيح الإشعارات
+    webpush.setVapidDetails(
+      'mailto:example@example.com',
+      'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U',
+      'Xpo8WrhQDLcfo1LrYFST-y1qXd_qVYJQQyJUUN7i0Ns'
+    );
+
+    // إرسال الإشعار
+    await webpush.sendNotification(
+      subscription,
+      JSON.stringify({
+        title: 'تذكير من موقع حبيبتي',
+        body: message,
+        icon: '/icon.png'
+      })
+    );
+
+    console.log('✅ Notification sent successfully');
+    return true;
+  } catch (err) {
+    console.error('❌ Error sending notification:', err);
+    return false;
+  }
+}
+
+// إرسال بريد إلكتروني
+async function sendEmail(email, message) {
+  try {
+    // هنا يمكنك استخدام مكتبة لإرسال البريد الإلكتروني مثل nodemailer
+    // في هذا المثال، سنقوم فقط بتسجيل الرسالة
+    console.log(`✅ Email sent to ${email}: ${message}`);
+    return true;
+  } catch (err) {
+    console.error('❌ Error sending email:', err);
+    return false;
+  }
+}
+
+// التحقق من التذكيرات وإرسالها
+async function checkAndSendReminders() {
+  try {
+    // الحصول على الوقت الحالي
+    const now = new Date();
+    const currentTime = now.toTimeString().substring(0, 5); // HH:MM
+
+    // البحث عن التذكيرات التي يجب إرسالها
+    const result = await pool.query(
+      'SELECT * FROM reminders WHERE time = $1 AND active = TRUE',
+      [currentTime]
+    );
+
+    if (result.rows.length === 0) {
+      return;
+    }
+
+    console.log(`🔔 Found ${result.rows.length} reminders to send at ${currentTime}`);
+
+    // إرسال كل تذكير
+    for (const reminder of result.rows) {
+      if (reminder.method === 'notification') {
+        // الحصول على جميع اشتراكات الإشعارات
+        const subscriptionsResult = await pool.query('SELECT * FROM push_subscriptions');
+
+        for (const sub of subscriptionsResult.rows) {
+          try {
+            const subscription = JSON.parse(sub.subscription);
+            await sendNotification(subscription, reminder.message);
+          } catch (err) {
+            console.error('❌ Error parsing subscription:', err);
+          }
+        }
+      } else if (reminder.method === 'email' && reminder.email) {
+        await sendEmail(reminder.email, reminder.message);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error checking reminders:', err);
+  }
+}
+
+// تشغيل فحص التذكيرات كل دقيقة
+setInterval(checkAndSendReminders, 60000);
 
 // إعادة ترتيب جميع الـ IDs
 app.post('/reorder-ids', async (req, res) => {
@@ -296,7 +546,8 @@ app.post('/reorder-ids', async (req, res) => {
     const { updates } = req.body;
 
     if (!updates || !Array.isArray(updates)) {
-      return res.status(400).json({ error: 'Invalid updates format' });
+      // إذا لم يتم توفير التحديثات، قم بإعادة ترتيب جميع الـ IDs تلقائيًا
+      return await reorderAllIds(req, res);
     }
 
     // بدء معاملة قاعدة البيانات
@@ -305,13 +556,36 @@ app.post('/reorder-ids', async (req, res) => {
     try {
       await client.query('BEGIN');
 
-      // تحديث كل ID
+      // إنشاء جدول مؤقت لتخزين التحديثات
+      await client.query(`
+        CREATE TEMP TABLE id_updates (
+          old_id INTEGER,
+          new_id INTEGER
+        )
+      `);
+
+      // إدراج التحديثات في الجدول المؤقت
       for (const update of updates) {
-        await client.query('UPDATE responses SET id = $1 WHERE id = $2', [
-          update.newId,
-          update.id
+        await client.query('INSERT INTO id_updates (old_id, new_id) VALUES ($1, $2)', [
+          update.id,
+          update.newId
         ]);
       }
+
+      // تحديث الـ IDs باستخدام الجدول المؤقت
+      await client.query(`
+        UPDATE responses
+        SET id = id_updates.new_id
+        FROM id_updates
+        WHERE responses.id = id_updates.old_id
+      `);
+
+      // إعادة ضبط تسلسل الـ ID
+      const maxIdResult = await client.query('SELECT MAX(id) FROM responses');
+      const maxId = maxIdResult.rows[0].max || 0;
+
+      // إعادة ضبط تسلسل الـ ID
+      await client.query(`ALTER SEQUENCE responses_id_seq RESTART WITH ${maxId + 1}`);
 
       await client.query('COMMIT');
       res.status(200).json({ message: 'IDs reordered successfully' });
@@ -326,6 +600,84 @@ app.post('/reorder-ids', async (req, res) => {
     res.status(500).json({ error: 'Failed to reorder IDs' });
   }
 });
+
+// إعادة ترتيب جميع الـ IDs تلقائيًا
+async function reorderAllIds(req, res) {
+  try {
+    // بدء معاملة قاعدة البيانات
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // الحصول على جميع الردود مرتبة حسب التاريخ
+      const result = await client.query('SELECT id FROM responses ORDER BY timestamp');
+      const responses = result.rows;
+
+      // إنشاء جدول مؤقت لتخزين التحديثات
+      await client.query(`
+        CREATE TEMP TABLE id_updates (
+          old_id INTEGER,
+          new_id INTEGER
+        )
+      `);
+
+      // إدراج التحديثات في الجدول المؤقت
+      for (let i = 0; i < responses.length; i++) {
+        await client.query('INSERT INTO id_updates (old_id, new_id) VALUES ($1, $2)', [
+          responses[i].id,
+          i + 1
+        ]);
+      }
+
+      // تحديث الـ IDs باستخدام الجدول المؤقت
+      await client.query(`
+        UPDATE responses
+        SET id = id_updates.new_id
+        FROM id_updates
+        WHERE responses.id = id_updates.old_id
+      `);
+
+      // إعادة ضبط تسلسل الـ ID
+      await client.query(`ALTER SEQUENCE responses_id_seq RESTART WITH ${responses.length + 1}`);
+
+      await client.query('COMMIT');
+
+      if (res) {
+        res.status(200).json({
+          message: 'All IDs reordered successfully',
+          count: responses.length
+        });
+      }
+
+      return true;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('❌ Error reordering all IDs:', err);
+
+    if (res) {
+      res.status(500).json({ error: 'Failed to reorder all IDs' });
+    }
+
+    return false;
+  }
+}
+
+// إعادة ترتيب الـ IDs عند بدء التطبيق
+setTimeout(async () => {
+  try {
+    console.log('🔄 Reordering IDs on startup...');
+    await reorderAllIds();
+    console.log('✅ IDs reordered successfully');
+  } catch (err) {
+    console.error('❌ Error reordering IDs on startup:', err);
+  }
+}, 5000); // انتظر 5 ثوانٍ بعد بدء التطبيق
 
 // API للتحقق من التسجيلات الصوتية
 app.get('/check-audio-files', async (req, res) => {

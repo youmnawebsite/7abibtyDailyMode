@@ -580,25 +580,87 @@ tr:hover {
   margin-top: 20px;
 }
 
+/* Reminders List */
+.reminders-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reminders-list li {
+  margin-bottom: 15px;
+}
+
 .reminder-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  transition: all 0.3s;
   border-bottom: 1px solid var(--border-color);
+}
+
+.reminder-item:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .reminder-item:last-child {
   border-bottom: none;
 }
 
-.reminder-item button {
-  background: var(--danger-color);
-  color: white;
+.reminder-details {
+  flex: 1;
+  min-width: 250px;
+}
+
+.reminder-details p {
+  margin: 5px 0;
+}
+
+.reminder-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.reminder-actions button {
+  padding: 8px 12px;
   border: none;
-  padding: 5px 10px;
-  border-radius: 5px;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
   cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.toggle-btn {
+  background-color: var(--info-color);
+}
+
+.test-btn {
+  background-color: var(--success-color);
+}
+
+.reminder-actions button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.active-status {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.inactive-status {
+  color: var(--danger-color);
+  font-weight: bold;
 }
 
 /* Backup Styles */
@@ -686,6 +748,7 @@ tr:hover {
   .container {
     margin: 10px;
     width: 95%;
+    max-width: 100%;
   }
 
   h1 {
@@ -695,10 +758,12 @@ tr:hover {
 
   h2 {
     font-size: 1.5rem;
+    margin: 15px 0;
   }
 
   h3 {
     font-size: 1.2rem;
+    margin: 10px 0;
   }
 
   .dashboard {
@@ -710,6 +775,16 @@ tr:hover {
   .controls {
     flex-direction: column;
     padding: 15px 10px;
+  }
+
+  .search-filters {
+    flex-direction: column;
+  }
+
+  .action-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .controls input,
@@ -731,12 +806,13 @@ tr:hover {
   .nav-tabs {
     flex-direction: row;
     flex-wrap: wrap;
+    padding: 0;
   }
 
   .nav-tabs li {
     padding: 10px 5px;
     font-size: 0.9rem;
-    flex: 1 0 50%;
+    flex: 1 0 33.33%;
     text-align: center;
   }
 
@@ -756,6 +832,7 @@ tr:hover {
     overflow-x: auto;
     width: 100%;
     -webkit-overflow-scrolling: touch;
+    margin-bottom: 15px;
   }
 
   /* Adjust audio player for mobile */
@@ -765,6 +842,34 @@ tr:hover {
 
   .audio-player audio {
     width: 100%;
+  }
+
+  .custom-audio-player {
+    padding: 8px;
+  }
+
+  .audio-progress-container {
+    height: 6px;
+  }
+
+  .audio-controls {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .audio-time {
+    order: 2;
+  }
+
+  .audio-buttons {
+    order: 1;
+  }
+
+  .audio-volume {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
 
   /* Improve modal for mobile */
@@ -778,13 +883,49 @@ tr:hover {
   .chart-container {
     height: 250px;
   }
+
+  /* Improve reminders for mobile */
+  .reminder-item {
+    flex-direction: column;
+  }
+
+  .reminder-details {
+    width: 100%;
+  }
+
+  .reminder-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
+  /* Improve backup section for mobile */
+  .backup-stats {
+    flex-direction: column;
+  }
+
+  .backup-stat {
+    margin-bottom: 10px;
+  }
+
+  /* Improve pagination for mobile */
+  .pagination {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pagination button,
+  .pagination select {
+    margin: 5px 0;
+  }
 }
 
 /* Extra small devices */
 @media (max-width: 480px) {
   .nav-tabs li {
-    flex: 1 0 100%;
+    flex: 1 0 50%;
     padding: 8px 5px;
+    font-size: 0.8rem;
   }
 
   .card {
@@ -818,5 +959,36 @@ tr:hover {
     padding: 5px 8px;
     font-size: 0.8rem;
     margin: 2px;
+  }
+
+  /* Adjust form elements for very small screens */
+  .reminder-form div {
+    margin-bottom: 10px;
+  }
+
+  .reminder-form label {
+    font-size: 0.9rem;
+  }
+
+  .reminder-form input,
+  .reminder-form select,
+  .reminder-form button {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  /* Adjust audio player for very small screens */
+  .audio-buttons button {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .audio-time {
+    font-size: 0.7rem;
+  }
+
+  .audio-volume input {
+    width: 60px;
   }
 }
