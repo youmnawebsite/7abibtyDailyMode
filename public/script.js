@@ -398,9 +398,9 @@ function submitAnswer(answer, audioBlob) {
         choicesElement.innerHTML = `
           <div class="notes-container">
             <h3>ملاحظات خاصة ليك 💕</h3>
-            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي... رسالة، طلب، أمنية..."></textarea>
-            <button id="saveNotesBtn">حفظ الملاحظات</button>
-            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">تم حفظ ملاحظاتك بنجاح ❤️</p>
+            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي كلام او طلب او أمنية"></textarea>
+            <button id="saveNotesBtn">ابعتي</button>
+            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">اتبعتت يروحي ❤️</p>
           </div>
         `;
 
@@ -512,9 +512,155 @@ document.addEventListener("DOMContentLoaded", function () {
   // تهيئة وظائف الإعدادات
   initSettings();
 
+  // طلب إذن الإشعارات
+  requestNotificationPermission();
+
+  // التحقق من وجود تذكير
+  checkReminder();
+
   // عرض السؤال الأول
   showQuestion();
 });
+
+// طلب إذن الإشعارات
+function requestNotificationPermission() {
+  // التحقق من دعم الإشعارات
+  if ('Notification' in window) {
+    // طلب الإذن إذا لم يكن ممنوحًا بالفعل
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          console.log('تم منح إذن الإشعارات');
+          registerServiceWorker();
+        }
+      });
+    } else if (Notification.permission === 'granted') {
+      console.log('إذن الإشعارات ممنوح بالفعل');
+      registerServiceWorker();
+    }
+  }
+}
+
+// تسجيل Service Worker للإشعارات
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/reminder-worker.js')
+      .then(registration => {
+        console.log('تم تسجيل Service Worker للتذكيرات بنجاح:', registration.scope);
+        subscribeForPushNotifications(registration);
+      })
+      .catch(error => {
+        console.error('فشل تسجيل Service Worker للتذكيرات:', error);
+      });
+  }
+}
+
+// الاشتراك في إشعارات الدفع
+function subscribeForPushNotifications(registration) {
+  fetch('/push-subscription')
+    .then(response => response.json())
+    .then(data => {
+      const publicKey = data.publicKey;
+
+      return registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      });
+    })
+    .then(subscription => {
+      // إرسال معلومات الاشتراك إلى الخادم
+      return fetch('/push-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(subscription)
+      });
+    })
+    .then(response => {
+      if (response.ok) {
+        console.log('تم الاشتراك في إشعارات الدفع بنجاح');
+      }
+    })
+    .catch(error => {
+      console.error('فشل الاشتراك في إشعارات الدفع:', error);
+    });
+}
+
+// تحويل Base64 URL إلى Uint8Array
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+
+  return outputArray;
+}
+
+// التحقق من وجود تذكير
+function checkReminder() {
+  // التحقق من وجود تذكيرات محفوظة
+  const savedReminders = localStorage.getItem('reminders');
+
+  if (savedReminders) {
+    const reminders = JSON.parse(savedReminders);
+
+    // التحقق من كل تذكير
+    reminders.forEach(reminder => {
+      if (reminder.active) {
+        // جدولة التذكير
+        scheduleReminder(reminder);
+      }
+    });
+  }
+}
+
+// جدولة التذكير
+function scheduleReminder(reminder) {
+  // الحصول على وقت التذكير
+  const [hours, minutes] = reminder.time.split(':');
+
+  // إنشاء تاريخ اليوم بالوقت المحدد
+  const reminderTime = new Date();
+  reminderTime.setHours(parseInt(hours, 10));
+  reminderTime.setMinutes(parseInt(minutes, 10));
+  reminderTime.setSeconds(0);
+
+  // إذا كان الوقت قد مر، جدولة التذكير لليوم التالي
+  if (reminderTime < new Date()) {
+    reminderTime.setDate(reminderTime.getDate() + 1);
+  }
+
+  // حساب الوقت المتبقي حتى التذكير
+  const timeUntilReminder = reminderTime.getTime() - new Date().getTime();
+
+  // جدولة التذكير
+  setTimeout(() => {
+    // إرسال التذكير
+    if (reminder.method === 'browser' && Notification.permission === 'granted') {
+      // إرسال إشعار المتصفح
+      new Notification('مزاج حبيبتي', {
+        body: reminder.message,
+        icon: '/icons/icon-192x192.png'
+      });
+    }
+
+    // جدولة التذكير لليوم التالي
+    reminderTime.setDate(reminderTime.getDate() + 1);
+    const nextTimeUntilReminder = reminderTime.getTime() - new Date().getTime();
+
+    setTimeout(() => {
+      scheduleReminder(reminder);
+    }, nextTimeUntilReminder);
+  }, timeUntilReminder);
+}
 
 // وظائف الإعدادات
 function initSettings() {

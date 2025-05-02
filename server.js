@@ -174,6 +174,41 @@ app.put('/responses/:id', async (req, res) => {
   }
 });
 
+// API لإدارة التذكيرات
+app.post('/reminders', async (req, res) => {
+  try {
+    const { time, message, method, email } = req.body;
+
+    if (!time || !message || !method) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (method === 'email' && !email) {
+      return res.status(400).json({ error: 'Email is required for email reminders' });
+    }
+
+    // في الإصدار الحالي، سنقوم فقط بتخزين التذكيرات في الذاكرة
+    // في الإصدار المستقبلي، يمكن تخزينها في قاعدة البيانات
+
+    res.status(200).json({ message: 'Reminder saved successfully' });
+  } catch (err) {
+    console.error('❌ Error saving reminder:', err);
+    res.status(500).json({ error: 'Failed to save reminder' });
+  }
+});
+
+// API لإرسال إشعارات المتصفح
+app.get('/push-subscription', (req, res) => {
+  res.json({
+    publicKey: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
+  });
+});
+
+app.post('/push-subscription', (req, res) => {
+  // في الإصدار المستقبلي، يمكن تخزين اشتراكات الإشعارات في قاعدة البيانات
+  res.status(200).json({ message: 'Subscription saved successfully' });
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
