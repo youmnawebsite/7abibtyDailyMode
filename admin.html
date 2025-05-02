@@ -248,6 +248,8 @@
         .catch(error => {
           console.error('Error loading responses:', error);
         });
+    }
+
     // تحديث لوحة المعلومات
     function updateDashboard() {
       if (!allResponses || allResponses.length === 0) return;
