@@ -412,8 +412,7 @@ tr:hover {
   justify-content: center;
 }
 
-.audio-player-controls button,
-.audio-player-controls a {
+.audio-player-controls button {
   background: var(--primary-color);
   color: white;
   border: none;
@@ -429,10 +428,27 @@ tr:hover {
   font-size: 1.2rem;
 }
 
+.audio-player-controls .download-btn {
+  background: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+  font-size: 1rem;
+  margin-top: 10px;
+}
+
 .audio-player-controls button:hover,
-.audio-player-controls a:hover {
+.audio-player-controls .download-btn:hover {
   background-color: var(--accent-color);
-  transform: scale(1.1);
+  transform: scale(1.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Custom audio controls */

@@ -821,7 +821,7 @@
                   </div>
                 </div>
                 <div class="audio-player-controls">
-                  <a href="${response.answer}" download title="تحميل الملف الصوتي">⬇️</a>
+                  <a href="${response.answer}" download="${response.id}_audio${getFileExtension(response.answer)}" title="تحميل الملف الصوتي" class="download-btn">⬇️ تحميل</a>
                 </div>
               </div>`
               : response.answer}
@@ -892,11 +892,49 @@
             }
           });
 
+          // تحميل الصوت مرة أخرى للتأكد من تحديثه
+          audio.load();
+
+          // إضافة معالج أحداث لحالة الخطأ
+          audio.onerror = function(e) {
+            console.error('Audio error:', e);
+            console.error('Audio error code:', audio.error ? audio.error.code : 'unknown');
+            console.error('Audio src:', audio.src);
+
+            // محاولة إصلاح المسار
+            if (audio.src.startsWith(window.location.origin)) {
+              // المسار مطلق، لا داعي للتغيير
+            } else {
+              // تحويل المسار النسبي إلى مطلق
+              const fixedSrc = window.location.origin + audioSrc;
+              console.log('Trying fixed path:', fixedSrc);
+              audio.src = fixedSrc;
+              audio.load();
+            }
+          };
+
           // تشغيل الصوت الحالي
-          audio.play().catch(error => {
-            console.error('Error playing audio:', error);
-            alert('حدث خطأ أثناء تشغيل الصوت. يرجى المحاولة مرة أخرى.');
-          });
+          const playPromise = audio.play();
+
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error('Error playing audio:', error);
+
+              // محاولة إصلاح المسار وإعادة التشغيل
+              if (!audio.src.startsWith(window.location.origin)) {
+                const fixedSrc = window.location.origin + audioSrc;
+                console.log('Trying fixed path on error:', fixedSrc);
+                audio.src = fixedSrc;
+                audio.load();
+                audio.play().catch(e => {
+                  console.error('Still failed after path fix:', e);
+                  alert('حدث خطأ أثناء تشغيل الصوت. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+                });
+              } else {
+                alert('حدث خطأ أثناء تشغيل الصوت. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+              }
+            });
+          }
 
           // تبديل الأزرار
           playBtn.style.display = 'none';
@@ -951,6 +989,21 @@
       const remainingSeconds = Math.floor(seconds % 60);
 
       return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    // الحصول على امتداد الملف من المسار
+    function getFileExtension(filePath) {
+      if (!filePath) return '.mp3';
+
+      const extensions = ['.mp3', '.wav', '.ogg', '.webm', '.audio'];
+
+      for (const ext of extensions) {
+        if (filePath.toLowerCase().endsWith(ext)) {
+          return ext;
+        }
+      }
+
+      return '.mp3'; // امتداد افتراضي
     }
 
     // تحديث معلومات الترقيم

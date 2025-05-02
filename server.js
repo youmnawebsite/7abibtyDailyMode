@@ -133,7 +133,29 @@ app.post('/submit', upload.single('audio'), async (req, res) => {
   }
 });
 
-app.use('/uploads', express.static('uploads'));
+// تكوين خاص لمجلد التحميلات
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // تعيين رؤوس HTTP للملفات الصوتية
+    if (filePath.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    } else if (filePath.endsWith('.wav')) {
+      res.setHeader('Content-Type', 'audio/wav');
+    } else if (filePath.endsWith('.ogg')) {
+      res.setHeader('Content-Type', 'audio/ogg');
+    } else if (filePath.endsWith('.webm')) {
+      res.setHeader('Content-Type', 'audio/webm');
+    } else if (filePath.endsWith('.audio')) {
+      res.setHeader('Content-Type', 'audio/mpeg'); // افتراضي
+    }
+
+    // تعيين رؤوس التخزين المؤقت
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+
+    // السماح بالتحميل
+    res.setHeader('Content-Disposition', 'inline');
+  }
+}));
 
 // Delete a response by ID
 app.delete('/responses/:id', async (req, res) => {
