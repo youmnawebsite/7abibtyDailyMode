@@ -97,24 +97,41 @@ h3 {
 .controls {
   padding: 20px;
   display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-filters {
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color);
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .controls input,
 .controls button,
 .controls select {
-  padding: 10px;
+  padding: 10px 15px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   outline: none;
   font-size: 1rem;
+  font-family: 'Tajawal', sans-serif;
+}
+
+.search-filters input,
+.search-filters select {
   flex: 1;
   min-width: 150px;
-  font-family: 'Tajawal', sans-serif;
 }
 
 .controls button {
@@ -122,11 +139,70 @@ h3 {
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .controls button:hover {
   filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.primary-btn {
+  background: var(--primary-color);
+}
+
+.secondary-btn {
+  background: var(--info-color);
+}
+
+.danger-btn {
+  background: var(--danger-color);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.pagination button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.pagination button:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.pagination span {
+  font-weight: bold;
+}
+
+.pagination select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  outline: none;
+  margin-left: 10px;
 }
 
 /* Table */
@@ -284,30 +360,121 @@ tr:hover {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.audio-player audio {
+  width: 100%;
+  height: 40px;
+  outline: none;
 }
 
 .audio-player-controls {
   display: flex;
   gap: 10px;
   margin-top: 5px;
+  justify-content: center;
 }
 
-.audio-player-controls button {
+.audio-player-controls button,
+.audio-player-controls a {
   background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
+  text-decoration: none;
+  font-size: 1.2rem;
 }
 
-.audio-player-controls button:hover {
+.audio-player-controls button:hover,
+.audio-player-controls a:hover {
   background-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+/* Custom audio controls */
+.custom-audio-player {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.audio-progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  margin: 10px 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.audio-progress-bar {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.audio-time {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 10px;
+}
+
+.audio-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.audio-buttons button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.audio-buttons button:hover {
+  background-color: var(--accent-color);
+  transform: scale(1.1);
+}
+
+.audio-volume {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.audio-volume input {
+  width: 80px;
+  cursor: pointer;
 }
 
 /* Reminder Settings */
@@ -392,33 +559,140 @@ tr:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .container {
+    margin: 10px;
+    width: 95%;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    padding: 15px 10px;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.2rem;
+  }
+
   .dashboard {
     grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 15px;
   }
-  
+
   .controls {
     flex-direction: column;
+    padding: 15px 10px;
   }
-  
+
   .controls input,
   .controls button,
   .controls select {
     width: 100%;
+    min-width: unset;
+    margin-bottom: 5px;
   }
-  
+
   .reminder-form {
     grid-template-columns: 1fr;
   }
-  
+
   .reminder-form button {
     grid-column: 1;
   }
-  
+
   .nav-tabs {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
-  
+
   .nav-tabs li {
+    padding: 10px 5px;
+    font-size: 0.9rem;
+    flex: 1 0 50%;
+    text-align: center;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  th, td {
+    padding: 10px 8px;
+    font-size: 0.9rem;
+  }
+
+  /* Improve table on mobile */
+  .mobile-table-container {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Adjust audio player for mobile */
+  .audio-player {
+    width: 100%;
+  }
+
+  .audio-player audio {
+    width: 100%;
+  }
+
+  /* Improve modal for mobile */
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+    margin: 5% auto;
+  }
+
+  /* Improve charts for mobile */
+  .chart-container {
+    height: 250px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .nav-tabs li {
+    flex: 1 0 100%;
+    padding: 8px 5px;
+  }
+
+  .card {
     padding: 10px;
+  }
+
+  .card-header {
+    font-size: 1rem;
+  }
+
+  .card-body {
+    font-size: 1.5rem;
+    padding: 10px 0;
+  }
+
+  /* Simplify table for very small screens */
+  th:nth-child(1),
+  td:nth-child(1),
+  th:nth-child(2),
+  td:nth-child(2) {
+    display: none;
+  }
+
+  th, td {
+    padding: 8px 5px;
+    font-size: 0.8rem;
+  }
+
+  /* Adjust buttons for mobile */
+  td button {
+    padding: 5px 8px;
+    font-size: 0.8rem;
+    margin: 2px;
   }
 }

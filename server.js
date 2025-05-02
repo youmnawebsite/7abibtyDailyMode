@@ -209,6 +209,43 @@ app.post('/push-subscription', (req, res) => {
   res.status(200).json({ message: 'Subscription saved successfully' });
 });
 
+// إعادة ترتيب جميع الـ IDs
+app.post('/reorder-ids', async (req, res) => {
+  try {
+    const { updates } = req.body;
+
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Invalid updates format' });
+    }
+
+    // بدء معاملة قاعدة البيانات
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // تحديث كل ID
+      for (const update of updates) {
+        await client.query('UPDATE responses SET id = $1 WHERE id = $2', [
+          update.newId,
+          update.id
+        ]);
+      }
+
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'IDs reordered successfully' });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('❌ Error reordering IDs:', err);
+    res.status(500).json({ error: 'Failed to reorder IDs' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);

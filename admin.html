@@ -54,39 +54,59 @@
     <!-- الردود -->
     <div id="responses-tab" class="tab-content">
       <div class="controls">
-        <input type="text" id="search" placeholder="البحث في السؤال أو الإجابة..." oninput="filterResponses()">
-        <select id="filter-question" onchange="filterResponses()">
-          <option value="">كل الأسئلة</option>
-          <!-- سيتم ملؤها ديناميكيًا -->
-        </select>
-        <select id="filter-mood" onchange="filterResponses()">
-          <option value="">كل الحالات المزاجية</option>
-          <option value="مبسوطه">مبسوطة</option>
-          <option value="متضايقة">متضايقة</option>
-          <option value="يعني">محايدة</option>
-        </select>
-        <input type="date" id="filter-date" onchange="filterResponses()">
-        <button onclick="clearFilters()">مسح الفلاتر</button>
-        <button onclick="exportToCSV()">تصدير CSV</button>
-        <button onclick="deleteSelectedResponses()">حذف المحدد</button>
+        <div class="search-filters">
+          <input type="text" id="search" placeholder="البحث في السؤال أو الإجابة..." oninput="filterResponses()">
+          <select id="filter-question" onchange="filterResponses()">
+            <option value="">كل الأسئلة</option>
+            <!-- سيتم ملؤها ديناميكيًا -->
+          </select>
+          <select id="filter-mood" onchange="filterResponses()">
+            <option value="">كل الحالات المزاجية</option>
+            <option value="مبسوطه">مبسوطة</option>
+            <option value="متضايقة">متضايقة</option>
+            <option value="يعني">محايدة</option>
+          </select>
+          <input type="date" id="filter-date" onchange="filterResponses()">
+        </div>
+
+        <div class="action-buttons">
+          <button onclick="clearFilters()" class="secondary-btn">مسح الفلاتر</button>
+          <button onclick="exportToCSV()" class="secondary-btn">تصدير CSV</button>
+          <button onclick="deleteSelectedResponses()" class="danger-btn">حذف المحدد</button>
+          <button onclick="reorderAllIds()" class="primary-btn">إعادة ترتيب الـ IDs</button>
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
-            <th>ID</th>
-            <th>السؤال</th>
-            <th>الإجابة</th>
-            <th>التاريخ</th>
-            <th>الإجراءات</th>
-          </tr>
-        </thead>
+      <div class="mobile-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+              <th>ID</th>
+              <th>السؤال</th>
+              <th>الإجابة</th>
+              <th>التاريخ</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
 
-        <tbody id="responses">
-          <!-- سيتم تحميل الردود هنا -->
-        </tbody>
-      </table>
+          <tbody id="responses">
+            <!-- سيتم تحميل الردود هنا -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="prev-page" onclick="changePage(-1)" disabled>السابق</button>
+        <span id="page-info">صفحة <span id="current-page">1</span> من <span id="total-pages">1</span></span>
+        <button id="next-page" onclick="changePage(1)" disabled>التالي</button>
+        <select id="page-size" onchange="changePageSize()">
+          <option value="10">10 ردود</option>
+          <option value="25">25 رد</option>
+          <option value="50">50 رد</option>
+          <option value="100">100 رد</option>
+        </select>
+      </div>
     </div>
 
     <!-- التحليلات -->
@@ -728,8 +748,23 @@
       return 'audio/mpeg'; // قيمة افتراضية
     }
 
+    // متغيرات الترقيم
+    let currentPage = 1;
+    let pageSize = 10;
+    let filteredResponses = [];
+
     // عرض الردود
     function renderResponses(data) {
+      filteredResponses = [...data]; // حفظ البيانات المصفاة للترقيم
+
+      // تطبيق الترقيم
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedData = data.slice(startIndex, endIndex);
+
+      // تحديث معلومات الترقيم
+      updatePagination(data.length);
+
       const tbody = document.getElementById('responses');
       tbody.innerHTML = '';
 
@@ -740,7 +775,7 @@
         return;
       }
 
-      data.forEach(response => {
+      paginatedData.forEach(response => {
         const row = document.createElement('tr');
         const formattedDate = new Date(response.timestamp).toLocaleString('ar-EG');
 
@@ -766,7 +801,7 @@
           <td>
             ${isAudio ?
               `<div class="audio-player">
-                <audio controls>
+                <audio controls controlsList="nodownload">
                   <source src="${response.answer}" type="${audioMimeType}">
                   المتصفح لا يدعم تشغيل الصوت.
                 </audio>
@@ -784,6 +819,112 @@
         `;
         tbody.appendChild(row);
       });
+
+      // تحسين مشغل الصوت
+      enhanceAudioPlayers();
+    }
+
+    // تحسين مشغلات الصوت
+    function enhanceAudioPlayers() {
+      // تحسين جميع مشغلات الصوت في الصفحة
+      document.querySelectorAll('.audio-player audio').forEach(audio => {
+        // إضافة أحداث لتحسين تجربة المستخدم
+        audio.addEventListener('play', function() {
+          // إيقاف جميع مشغلات الصوت الأخرى عند تشغيل واحد
+          document.querySelectorAll('.audio-player audio').forEach(otherAudio => {
+            if (otherAudio !== audio && !otherAudio.paused) {
+              otherAudio.pause();
+            }
+          });
+        });
+
+        // تحسين جودة الصوت
+        audio.volume = 1.0; // أقصى مستوى صوت
+      });
+    }
+
+    // تحديث معلومات الترقيم
+    function updatePagination(totalItems) {
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      document.getElementById('current-page').textContent = currentPage;
+      document.getElementById('total-pages').textContent = totalPages;
+
+      // تحديث حالة أزرار التنقل
+      document.getElementById('prev-page').disabled = currentPage <= 1;
+      document.getElementById('next-page').disabled = currentPage >= totalPages;
+
+      // تحديث حجم الصفحة المحدد
+      document.getElementById('page-size').value = pageSize;
+    }
+
+    // تغيير الصفحة
+    function changePage(delta) {
+      currentPage += delta;
+      renderResponses(filteredResponses);
+    }
+
+    // تغيير حجم الصفحة
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById('page-size').value);
+      currentPage = 1; // العودة إلى الصفحة الأولى عند تغيير حجم الصفحة
+      renderResponses(filteredResponses);
+    }
+
+    // إعادة ترتيب جميع الـ IDs
+    function reorderAllIds() {
+      if (!confirm('هل أنت متأكد من إعادة ترتيب جميع الـ IDs؟ سيتم ترتيبها بشكل تسلسلي من 1.')) return;
+
+      // إنشاء نسخة مرتبة من الردود حسب التاريخ
+      const sortedResponses = [...allResponses].sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
+      // إنشاء مصفوفة من التحديثات
+      const updates = sortedResponses.map((response, index) => ({
+        id: response.id,
+        newId: index + 1
+      }));
+
+      // إرسال طلب التحديث
+      fetch('/reorder-ids', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ updates })
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('تم إعادة ترتيب الـ IDs بنجاح!');
+          loadResponses();
+        } else {
+          throw new Error('فشل إعادة ترتيب الـ IDs');
+        }
+      })
+      .catch(error => {
+        console.error('Error reordering IDs:', error);
+        alert('حدث خطأ أثناء إعادة ترتيب الـ IDs. سنقوم بتحديث الـ IDs محليًا.');
+
+        // تحديث الـ IDs محليًا إذا فشل الطلب
+        updateIdsLocally(updates);
+      });
+    }
+
+    // تحديث الـ IDs محليًا
+    function updateIdsLocally(updates) {
+      // تحديث الـ IDs في الذاكرة
+      updates.forEach(update => {
+        const response = allResponses.find(r => r.id === update.id);
+        if (response) {
+          response.id = update.newId;
+        }
+      });
+
+      // إعادة عرض الردود
+      renderResponses(filteredResponses);
+
+      alert('تم تحديث الـ IDs محليًا. قد تحتاج إلى إعادة تحميل الصفحة لرؤية التغييرات بشكل كامل.');
     }
 
     // تصفية الردود
@@ -800,7 +941,8 @@
         filtered = filtered.filter(
           response =>
             response.question.toLowerCase().includes(search) ||
-            response.answer.toLowerCase().includes(search)
+            response.answer.toLowerCase().includes(search) ||
+            response.id.toString().includes(search)
         );
       }
 
@@ -832,6 +974,10 @@
         });
       }
 
+      // إعادة تعيين الصفحة الحالية عند تغيير الفلتر
+      currentPage = 1;
+
+      // عرض النتائج المصفاة
       renderResponses(filtered);
     }
 
@@ -841,6 +987,10 @@
       document.getElementById('filter-date').value = '';
       document.getElementById('filter-question').value = '';
       document.getElementById('filter-mood').value = '';
+
+      // إعادة تعيين الصفحة الحالية
+      currentPage = 1;
+
       renderResponses(allResponses);
     }
 
