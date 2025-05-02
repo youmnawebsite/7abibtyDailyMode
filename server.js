@@ -268,6 +268,38 @@ app.post('/reorder-ids', async (req, res) => {
   }
 });
 
+// API للتحقق من التسجيلات الصوتية
+app.get('/check-audio-files', async (req, res) => {
+  try {
+    // التحقق من قاعدة البيانات
+    const result = await pool.query('SELECT id, question, answer, timestamp FROM responses WHERE answer LIKE \'/uploads/%\'');
+
+    // التحقق من وجود الملفات
+    const audioResponses = result.rows;
+    const fileStatus = [];
+
+    for (const response of audioResponses) {
+      const filePath = path.join(__dirname, response.answer.substring(1)); // إزالة الشرطة المائلة الأولى
+      const exists = fs.existsSync(filePath);
+
+      fileStatus.push({
+        id: response.id,
+        path: response.answer,
+        exists: exists,
+        timestamp: response.timestamp
+      });
+    }
+
+    res.json({
+      totalAudioResponses: audioResponses.length,
+      fileStatus: fileStatus
+    });
+  } catch (err) {
+    console.error('❌ Error checking audio files:', err);
+    res.status(500).json({ error: 'Failed to check audio files' });
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`🚀 Server is running on port ${port}`);
