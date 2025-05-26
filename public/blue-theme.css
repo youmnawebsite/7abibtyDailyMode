@@ -1,0 +1,1047 @@
+/* 💙 الثيم الأزرق المودرن والراقي 💙 */
+
+:root {
+  /* ألوان أزرق مودرن وراقي */
+  --primary-color: #3498db;
+  --primary-color-rgb: 52, 152, 219;
+  --secondary-color: #5dade2;
+  --accent-color: #85c1e9;
+  --blue-dark: #2980b9;
+  --blue-light: #aed6f1;
+  --blue-soft: #d6eaf8;
+  --silver: #bdc3c7;
+  --white-soft: #f8f9fa;
+  --background-gradient: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 50%, #bbdefb 100%);
+  --card-background: rgba(255, 255, 255, 0.95);
+  --text-primary: #2c3e50;
+  --text-secondary: #5d6d7e;
+  --shadow-light: 0 8px 25px rgba(52, 152, 219, 0.15);
+  --shadow-medium: 0 12px 35px rgba(52, 152, 219, 0.2);
+  --shadow-elegant: 0 15px 45px rgba(52, 152, 219, 0.25);
+  --border-radius: 20px;
+  --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+body {
+    font-family: 'Cairo', 'Tajawal', sans-serif;
+    background: var(--background-gradient);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    text-align: center;
+    padding: 15px;
+    margin: 0;
+    min-height: 100vh;
+    animation: elegant-fadeIn 1.8s ease-out;
+    line-height: 1.6;
+    position: relative;
+    overflow-x: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* عناصر خلفية أنيقة */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="20">✦</text></svg>'),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="16">◆</text></svg>'),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50" font-size="14">✧</text></svg>');
+    background-size: 60px 60px, 40px 40px, 30px 30px;
+    background-position:
+        15% 25%,
+        85% 75%,
+        50% 15%;
+    animation:
+        elegant-float1 20s infinite ease-in-out,
+        elegant-float2 25s infinite ease-in-out,
+        elegant-float3 30s infinite ease-in-out;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+/* البطاقة الرئيسية الأنيقة */
+#app {
+    width: 100%;
+    max-width: 550px;
+    margin: 0 auto;
+    background: var(--card-background);
+    backdrop-filter: blur(25px);
+    padding: 45px 35px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    animation: elegant-entrance 1.5s ease-out, gentle-levitate 12s infinite ease-in-out 3s;
+    position: relative;
+    overflow: hidden;
+    min-height: auto;
+    transition: var(--transition);
+}
+
+#app::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    background-size: 200% 100%;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    animation: elegant-flow 8s infinite ease-in-out;
+}
+
+#app::after {
+    content: '✦';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    animation: elegant-sparkle 6s infinite ease-in-out;
+    opacity: 0.7;
+}
+
+/* تأثير hover أنيق */
+#app:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-elegant), 0 0 40px rgba(52, 152, 219, 0.2);
+    border-color: var(--primary-color);
+    animation: elegant-entrance 1.5s ease-out, gentle-levitate 12s infinite ease-in-out 3s, elegant-glow 1s ease-out;
+}
+
+#app:hover::before {
+    animation: elegant-flow 4s infinite ease-in-out;
+}
+
+#app:hover::after {
+    animation: elegant-sparkle-excited 3s infinite ease-in-out;
+}
+
+/* العنوان الأنيق */
+h1 {
+    font-family: 'Cairo', sans-serif;
+    font-size: 2.3rem;
+    font-weight: 600;
+    margin-bottom: 40px;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: elegant-text-flow 12s infinite, subtle-float 8s infinite;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    cursor: default;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+}
+
+h1:hover {
+    animation: elegant-text-flow 4s infinite, elegant-title-dance 1.5s infinite;
+    transform: scale(1.03);
+    filter: drop-shadow(0 4px 8px rgba(52, 152, 219, 0.3));
+}
+
+h1::after {
+    content: '💙';
+    position: absolute;
+    right: -45px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.6rem;
+    animation: elegant-heart 8s infinite;
+    filter: drop-shadow(0 2px 4px rgba(52, 152, 219, 0.3));
+}
+
+h1::before {
+    content: '✦';
+    position: absolute;
+    left: -45px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.4rem;
+    color: var(--accent-color);
+    animation: elegant-star 10s infinite;
+    filter: drop-shadow(0 1px 3px rgba(133, 193, 233, 0.3));
+}
+
+/* الأزرار الأنيقة */
+button {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background-size: 200% 200%;
+    color: white;
+    border: none;
+    padding: 16px 30px;
+    margin: 12px 10px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: var(--transition);
+    box-shadow: var(--shadow-light);
+    position: relative;
+    overflow: hidden;
+    text-transform: none;
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    animation: elegant-breathe 6s infinite ease-in-out;
+}
+
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.8s ease;
+}
+
+button:hover::before {
+    left: 100%;
+}
+
+button:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: var(--shadow-medium), 0 0 25px rgba(52, 152, 219, 0.3);
+    filter: brightness(1.1);
+    border-color: var(--accent-color);
+    animation: elegant-hover-dance 1s ease-in-out, elegant-breathe 3s infinite ease-in-out;
+    background-position: 100% 50%;
+}
+
+button:active {
+    transform: translateY(-2px) scale(1.02);
+    animation: elegant-press 0.3s ease-out;
+}
+
+/* أزرار المزاج الأنيقة */
+.mood-button {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color), var(--blue-light));
+    background-size: 300% 300%;
+    animation: elegant-mood-glow 8s infinite ease-in-out, elegant-gradient-shift 12s infinite ease-in-out;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.mood-button:hover {
+    animation: elegant-mood-excited 1.2s ease-in-out, elegant-gradient-shift 6s infinite ease-in-out;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    background-size: 300% 300%;
+    transform: translateY(-5px) scale(1.06);
+    box-shadow: var(--shadow-elegant), 0 0 30px rgba(52, 152, 219, 0.4);
+}
+
+button:disabled {
+    background: linear-gradient(135deg, #ecf0f1, #d5dbdb);
+    color: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
+    animation: none;
+}
+
+button:disabled::before {
+    display: none;
+}
+
+/* عناصر النموذج الأنيقة */
+textarea, #personalNotes {
+    width: 100%;
+    min-height: 100px;
+    padding: 18px;
+    border: 2px solid var(--accent-color);
+    border-radius: 15px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 1rem;
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-light);
+    transition: var(--transition);
+    resize: vertical;
+    color: var(--text-primary);
+}
+
+textarea:focus, #personalNotes:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-medium), 0 0 20px rgba(52, 152, 219, 0.2);
+    transform: scale(1.02);
+}
+
+/* أزرار التسجيل الأنيقة */
+#recordButton, #stopButton {
+    background: linear-gradient(135deg, var(--blue-dark), var(--primary-color), var(--secondary-color));
+    background-size: 200% 200%;
+    padding: 18px 32px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border-radius: 25px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: elegant-record-breathe 4s infinite ease-in-out;
+    transition: var(--transition);
+}
+
+#recordButton::after {
+    content: '🎤';
+    margin-left: 10px;
+    animation: elegant-mic-float 3s infinite ease-in-out;
+}
+
+#recordButton:hover {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    background-size: 200% 200%;
+    transform: translateY(-5px) scale(1.08);
+    box-shadow: var(--shadow-elegant), 0 0 30px rgba(52, 152, 219, 0.4);
+    animation: elegant-record-excited 1s ease-in-out, elegant-record-breathe 2s infinite ease-in-out;
+}
+
+#recordButton.recording {
+    background: linear-gradient(135deg, var(--blue-dark), var(--primary-color), var(--secondary-color));
+    animation: elegant-recording-pulse 1.5s infinite ease-in-out;
+    box-shadow: var(--shadow-elegant), 0 0 35px rgba(52, 152, 219, 0.6);
+}
+
+#stopButton {
+    background: linear-gradient(135deg, #34495e, #2c3e50, #1a252f);
+    background-size: 200% 200%;
+}
+
+#stopButton::after {
+    content: '⏹️';
+    margin-left: 10px;
+    animation: elegant-stop-pulse 4s infinite ease-in-out;
+}
+
+#stopButton:hover {
+    background: linear-gradient(135deg, #5d6d7e, #34495e, #2c3e50);
+    background-size: 200% 200%;
+    transform: translateY(-5px) scale(1.08);
+    box-shadow: var(--shadow-medium), 0 0 25px rgba(52, 73, 94, 0.4);
+    animation: elegant-stop-excited 1s ease-in-out, elegant-record-breathe 2s infinite ease-in-out;
+}
+
+#retryButton {
+    background: linear-gradient(135deg, var(--silver), #95a5a6, #7f8c8d);
+    background-size: 200% 200%;
+    padding: 18px 32px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border-radius: 25px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: elegant-retry-breathe 5s infinite ease-in-out;
+}
+
+#retryButton::after {
+    content: '🔄';
+    margin-left: 10px;
+    animation: elegant-retry-rotate 4s infinite ease-in-out;
+}
+
+#retryButton:hover {
+    background: linear-gradient(135deg, #bdc3c7, var(--silver), #95a5a6);
+    background-size: 200% 200%;
+    transform: translateY(-5px) scale(1.08);
+    box-shadow: var(--shadow-medium), 0 0 25px rgba(189, 195, 199, 0.4);
+    animation: elegant-retry-excited 1s ease-in-out, elegant-retry-breathe 2.5s infinite ease-in-out;
+}
+
+/* الصفحة الأخيرة الأنيقة */
+.final-container {
+    text-align: center;
+    animation: elegant-entrance 2s ease-out;
+}
+
+.love-message {
+    margin-bottom: 35px;
+    padding: 25px;
+    background: linear-gradient(135deg, var(--blue-soft), var(--white-soft));
+    border-radius: 20px;
+    box-shadow: var(--shadow-light);
+    animation: elegant-love-glow 6s infinite ease-in-out;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.love-message h2 {
+    font-family: 'Cairo', sans-serif;
+    font-size: 1.9rem;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: elegant-text-flow 8s infinite;
+}
+
+.love-message p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0;
+    opacity: 0.9;
+}
+
+.final-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 25px 0;
+}
+
+.final-btn {
+    padding: 18px 35px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    animation: elegant-mood-glow 3s infinite;
+    flex: 1;
+    min-width: 140px;
+}
+
+.skip-btn {
+    background: linear-gradient(135deg, var(--accent-color), var(--blue-light));
+    animation: elegant-skip-glow 4s infinite;
+}
+
+.skip-btn:hover {
+    background: linear-gradient(135deg, var(--blue-light), var(--accent-color));
+    animation: elegant-skip-excited 0.8s ease-out;
+    transform: translateY(-5px) scale(1.05);
+}
+
+.success-message {
+    display: none;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--blue-soft);
+    border-radius: 15px;
+    animation: elegant-entrance 1s ease-out;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+/* الإعدادات الأنيقة */
+.settings-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 20px;
+    transition: var(--transition);
+    box-shadow: var(--shadow-light);
+    z-index: 1000;
+    animation: elegant-settings-float 6s infinite ease-in-out;
+}
+
+.settings-button:hover {
+    transform: scale(1.1) rotate(90deg);
+    box-shadow: var(--shadow-medium), 0 0 20px rgba(52, 152, 219, 0.4);
+    animation: elegant-settings-spin 1s ease-in-out;
+}
+
+/* Responsive Design أنيق */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
+    #app {
+        padding: 35px 25px;
+        margin: 0;
+        max-width: 100%;
+        width: calc(100% - 20px);
+    }
+
+    h1 {
+        font-size: 2rem;
+        margin-bottom: 30px;
+    }
+
+    h1::after {
+        right: -40px;
+        font-size: 1.4rem;
+    }
+
+    h1::before {
+        left: -40px;
+        font-size: 1.2rem;
+    }
+
+    button {
+        padding: 14px 26px;
+        font-size: 1rem;
+        margin: 10px 8px;
+    }
+
+    .settings-button {
+        top: 15px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px;
+        padding-top: 15px;
+    }
+
+    #app {
+        padding: 30px 20px;
+        width: calc(100% - 16px);
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+    }
+
+    h1::after {
+        right: -35px;
+        font-size: 1.3rem;
+    }
+
+    h1::before {
+        left: -35px;
+        font-size: 1.1rem;
+    }
+
+    button {
+        padding: 12px 22px;
+        font-size: 0.95rem;
+        margin: 8px 6px;
+    }
+
+    .settings-button {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+}
+
+@media (max-height: 600px) {
+    body {
+        align-items: flex-start;
+        padding-top: 10px;
+    }
+
+    #app {
+        margin-top: 0;
+    }
+
+    h1 {
+        margin-bottom: 20px;
+    }
+}
+
+/* 🎭 Animations أنيقة ومودرن */
+
+/* دخول أنيق */
+@keyframes elegant-fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+        filter: blur(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0px);
+    }
+}
+
+@keyframes elegant-entrance {
+    0% {
+        transform: scale(0.8) translateY(40px) rotate(-2deg);
+        opacity: 0;
+        filter: blur(5px);
+    }
+    50% {
+        transform: scale(1.05) translateY(-5px) rotate(1deg);
+        opacity: 0.8;
+        filter: blur(1px);
+    }
+    100% {
+        transform: scale(1) translateY(0) rotate(0deg);
+        opacity: 1;
+        filter: blur(0px);
+    }
+}
+
+/* طفو أنيق */
+@keyframes gentle-levitate {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-6px) rotate(0.3deg);
+    }
+    50% {
+        transform: translateY(-3px) rotate(0deg);
+    }
+    75% {
+        transform: translateY(-8px) rotate(-0.3deg);
+    }
+}
+
+@keyframes subtle-float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+/* تدفق أنيق للألوان */
+@keyframes elegant-flow {
+    0% {
+        background-position: 0% 50%;
+        transform: scaleX(1);
+    }
+    50% {
+        background-position: 100% 50%;
+        transform: scaleX(1.02);
+    }
+    100% {
+        background-position: 0% 50%;
+        transform: scaleX(1);
+    }
+}
+
+@keyframes elegant-text-flow {
+    0% {
+        background-position: 0% 50%;
+    }
+    25% {
+        background-position: 100% 25%;
+    }
+    50% {
+        background-position: 50% 100%;
+    }
+    75% {
+        background-position: 0% 75%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* تأثيرات النجوم */
+@keyframes elegant-sparkle {
+    0%, 100% {
+        opacity: 0.7;
+        transform: scale(1) rotate(0deg);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1.2) rotate(90deg);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(0.9) rotate(180deg);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1.1) rotate(270deg);
+    }
+}
+
+@keyframes elegant-sparkle-excited {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+    33% {
+        opacity: 0.8;
+        transform: scale(1.4) rotate(120deg);
+    }
+    66% {
+        opacity: 1;
+        transform: scale(0.8) rotate(240deg);
+    }
+}
+
+/* تأثيرات العنوان */
+@keyframes elegant-title-dance {
+    0%, 100% {
+        transform: scale(1.03) rotate(0deg);
+    }
+    25% {
+        transform: scale(1.04) rotate(0.5deg);
+    }
+    50% {
+        transform: scale(1.05) rotate(0deg);
+    }
+    75% {
+        transform: scale(1.04) rotate(-0.5deg);
+    }
+}
+
+@keyframes elegant-heart {
+    0%, 100% {
+        transform: translateY(-50%) scale(1) rotate(0deg);
+        filter: hue-rotate(0deg);
+    }
+    25% {
+        transform: translateY(-55%) scale(1.1) rotate(5deg);
+        filter: hue-rotate(15deg);
+    }
+    50% {
+        transform: translateY(-45%) scale(1.05) rotate(0deg);
+        filter: hue-rotate(30deg);
+    }
+    75% {
+        transform: translateY(-52%) scale(1.08) rotate(-3deg);
+        filter: hue-rotate(15deg);
+    }
+}
+
+@keyframes elegant-star {
+    0%, 100% {
+        transform: translateY(-50%) rotate(0deg) scale(1);
+        opacity: 0.7;
+    }
+    25% {
+        transform: translateY(-55%) rotate(90deg) scale(1.1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-45%) rotate(180deg) scale(0.9);
+        opacity: 0.8;
+    }
+    75% {
+        transform: translateY(-52%) rotate(270deg) scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* تأثيرات الأزرار */
+@keyframes elegant-breathe {
+    0%, 100% {
+        transform: scale(1);
+        background-position: 0% 50%;
+        box-shadow: var(--shadow-light);
+    }
+    50% {
+        transform: scale(1.02);
+        background-position: 100% 50%;
+        box-shadow: var(--shadow-medium);
+    }
+}
+
+@keyframes elegant-hover-dance {
+    0%, 100% {
+        transform: translateY(-4px) scale(1.04) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-5px) scale(1.05) rotate(0.5deg);
+    }
+    75% {
+        transform: translateY(-3px) scale(1.03) rotate(-0.5deg);
+    }
+}
+
+@keyframes elegant-press {
+    0% {
+        transform: translateY(-2px) scale(1.02);
+    }
+    50% {
+        transform: translateY(-1px) scale(1.06);
+    }
+    100% {
+        transform: translateY(-2px) scale(1.02);
+    }
+}
+
+@keyframes elegant-glow {
+    0% {
+        box-shadow: var(--shadow-medium);
+    }
+    50% {
+        box-shadow: var(--shadow-elegant), 0 0 50px rgba(52, 152, 219, 0.3);
+    }
+    100% {
+        box-shadow: var(--shadow-elegant), 0 0 40px rgba(52, 152, 219, 0.2);
+    }
+}
+
+/* تأثيرات أزرار المزاج */
+@keyframes elegant-mood-glow {
+    0%, 100% {
+        box-shadow: var(--shadow-light);
+        filter: brightness(1);
+        background-position: 0% 50%;
+    }
+    50% {
+        box-shadow: var(--shadow-medium), 0 0 20px rgba(52, 152, 219, 0.3);
+        filter: brightness(1.05);
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes elegant-gradient-shift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    33% {
+        background-position: 100% 0%;
+    }
+    66% {
+        background-position: 0% 100%;
+    }
+}
+
+@keyframes elegant-mood-excited {
+    0%, 100% {
+        transform: translateY(-5px) scale(1.06) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-6px) scale(1.07) rotate(1deg);
+    }
+    75% {
+        transform: translateY(-4px) scale(1.05) rotate(-1deg);
+    }
+}
+
+/* تأثيرات العناصر المتحركة */
+@keyframes elegant-float1 {
+    0%, 100% {
+        background-position: 15% 25%, 85% 75%, 50% 15%;
+        opacity: 0.3;
+    }
+    33% {
+        background-position: 20% 20%, 80% 80%, 55% 10%;
+        opacity: 0.4;
+    }
+    66% {
+        background-position: 10% 30%, 90% 70%, 45% 20%;
+        opacity: 0.35;
+    }
+}
+
+@keyframes elegant-float2 {
+    0%, 100% {
+        background-position: 85% 75%, 15% 25%, 50% 15%;
+        opacity: 0.25;
+    }
+    50% {
+        background-position: 90% 70%, 10% 30%, 55% 10%;
+        opacity: 0.4;
+    }
+}
+
+@keyframes elegant-float3 {
+    0%, 100% {
+        background-position: 50% 15%, 15% 25%, 85% 75%;
+        opacity: 0.2;
+    }
+    25% {
+        background-position: 55% 10%, 20% 20%, 80% 80%;
+        opacity: 0.35;
+    }
+    75% {
+        background-position: 45% 20%, 10% 30%, 90% 70%;
+        opacity: 0.3;
+    }
+}
+
+/* تأثيرات التسجيل الصوتي */
+@keyframes elegant-record-breathe {
+    0%, 100% {
+        transform: scale(1);
+        background-position: 0% 50%;
+    }
+    50% {
+        transform: scale(1.03);
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes elegant-record-excited {
+    0%, 100% {
+        transform: translateY(-5px) scale(1.08) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-6px) scale(1.09) rotate(1deg);
+    }
+    75% {
+        transform: translateY(-4px) scale(1.07) rotate(-1deg);
+    }
+}
+
+@keyframes elegant-recording-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: var(--shadow-elegant), 0 0 35px rgba(52, 152, 219, 0.6);
+    }
+    50% {
+        transform: scale(1.04);
+        box-shadow: var(--shadow-elegant), 0 0 45px rgba(52, 152, 219, 0.8);
+    }
+}
+
+@keyframes elegant-mic-float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-3px) scale(1.1);
+    }
+}
+
+@keyframes elegant-stop-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+@keyframes elegant-stop-excited {
+    0%, 100% {
+        transform: translateY(-5px) scale(1.08) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-6px) scale(1.09) rotate(0.5deg);
+    }
+}
+
+@keyframes elegant-retry-breathe {
+    0%, 100% {
+        transform: scale(1);
+        background-position: 0% 50%;
+    }
+    50% {
+        transform: scale(1.02);
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes elegant-retry-rotate {
+    0%, 100% {
+        transform: rotate(0deg) scale(1);
+    }
+    25% {
+        transform: rotate(90deg) scale(1.05);
+    }
+    50% {
+        transform: rotate(180deg) scale(1);
+    }
+    75% {
+        transform: rotate(270deg) scale(1.05);
+    }
+}
+
+@keyframes elegant-retry-excited {
+    0%, 100% {
+        transform: translateY(-5px) scale(1.08) rotate(0deg);
+    }
+    33% {
+        transform: translateY(-6px) scale(1.09) rotate(3deg);
+    }
+    66% {
+        transform: translateY(-4px) scale(1.07) rotate(-3deg);
+    }
+}
+
+/* تأثيرات الصفحة الأخيرة */
+@keyframes elegant-love-glow {
+    0%, 100% {
+        box-shadow: var(--shadow-light);
+        filter: brightness(1);
+    }
+    50% {
+        box-shadow: var(--shadow-medium), 0 0 25px rgba(52, 152, 219, 0.2);
+        filter: brightness(1.03);
+    }
+}
+
+@keyframes elegant-skip-glow {
+    0%, 100% {
+        box-shadow: var(--shadow-light);
+        background-position: 0% 50%;
+    }
+    50% {
+        box-shadow: var(--shadow-medium);
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes elegant-skip-excited {
+    0%, 100% {
+        transform: translateY(-5px) scale(1.05) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-6px) scale(1.06) rotate(1deg);
+    }
+}
+
+/* تأثيرات الإعدادات */
+@keyframes elegant-settings-float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-3px) rotate(5deg);
+    }
+}
+
+@keyframes elegant-settings-spin {
+    0% {
+        transform: scale(1.1) rotate(90deg);
+    }
+    50% {
+        transform: scale(1.15) rotate(180deg);
+    }
+    100% {
+        transform: scale(1.1) rotate(270deg);
+    }
+}
+
+/* Animation تبديل الثيمات */
+@keyframes theme-switch {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1) rotate(5deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}

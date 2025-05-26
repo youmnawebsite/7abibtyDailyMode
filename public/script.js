@@ -45,6 +45,7 @@ function showQuestion() {
     currentQuestion.choices.forEach((choice, index) => {
       const button = document.createElement("button");
       button.innerText = choice;
+      button.classList.add("mood-button");
 
       // تعيين وظيفة مختلفة لكل زر
       if (choice === "عاوزة أكتب") {
@@ -65,6 +66,7 @@ function showQuestion() {
     currentQuestion.choices.forEach((choice, index) => {
       const button = document.createElement("button");
       button.innerText = choice;
+      button.classList.add("mood-button");
       button.addEventListener("click", () => handleAnswer(choice, currentQuestion.extraInput && index === 0, false));
       choicesElement.appendChild(button);
     });
@@ -94,6 +96,9 @@ function showQuestion() {
 
 function handleAnswer(answer, showExtraInput, allowRecording) {
   console.log("Handle answer:", answer, "showExtraInput:", showExtraInput, "allowRecording:", allowRecording);
+
+  // إضافة تفاعل طفولي مع الإجابات
+  addMagicalReaction(answer);
 
   // التعامل مع السؤال الأخير بشكل خاص
   if (currentQuestionIndex === 2) { // السؤال الثالث (الأخير)
@@ -391,21 +396,30 @@ function submitAnswer(answer, audioBlob) {
       if (currentQuestionIndex < questions.length) {
         showQuestion();
       } else {
-        // إظهار رسالة الإكمال مع مساحة للملاحظات الخاصة
-        questionElement.innerHTML = "<h1>💌 انا مبسوط لو انتي مبسوطة يا يومنتي</h1> <h1> ❤️بحبك </h1>";
+        // إظهار رسالة الإكمال الجميلة والمتناسقة
+        questionElement.innerHTML = "💌 انا مبسوط لو انتي مبسوطة يا يومنتي ❤️";
 
-        // إضافة مساحة للملاحظات الخاصة
+        // إضافة مساحة للملاحظات الخاصة بتصميم متناسق
         choicesElement.innerHTML = `
-          <div class="notes-container">
-            <h3>عشان اي حاجه عاوزه توصليهالي او تطلبيها مني💕</h3>
-            <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي كلام او طلب او أمنية"></textarea>
-            <button id="saveNotesBtn">ابعتي</button>
-            <p id="notesSavedMessage" style="display: none; color: #ff6f91; margin-top: 10px;">اتبعتت يروحي ❤️</p>
+          <div class="final-container">
+            <div class="love-message">
+              <h2>بحبك يا أحلى حاجة في الدنيا 💕</h2>
+              <p>لو عايزة توصليلي أي حاجة (اختياري)</p>
+            </div>
+            <div class="notes-section">
+              <textarea id="personalNotes" placeholder="اكتبي أي حاجة عايزة توصلهالي... (مش مطلوب) 🌸"></textarea>
+              <div class="final-buttons">
+                <button id="saveNotesBtn" class="mood-button final-btn">ابعتي 💖</button>
+                <button id="skipBtn" class="mood-button skip-btn">مفيش حاجة ✨</button>
+              </div>
+              <p id="notesSavedMessage" class="success-message">اتبعتت يروحي ❤️</p>
+            </div>
           </div>
         `;
 
         // إضافة وظيفة لزر حفظ الملاحظات
         const saveNotesBtn = document.getElementById("saveNotesBtn");
+        const skipBtn = document.getElementById("skipBtn");
         const personalNotes = document.getElementById("personalNotes");
         const notesSavedMessage = document.getElementById("notesSavedMessage");
 
@@ -416,17 +430,26 @@ function submitAnswer(answer, audioBlob) {
         }
 
         saveNotesBtn.onclick = () => {
+          if (personalNotes.value.trim() === "") {
+            personalNotes.style.animation = 'gentle-comfort 0.5s ease-out';
+            personalNotes.focus();
+            return;
+          }
+
           localStorage.setItem('personalNotes', personalNotes.value);
+
+          // إضافة تفاعل سحري للإرسال النهائي
+          addMagicalReaction('رسالة حب نهائية');
 
           // إظهار رسالة التأكيد
           notesSavedMessage.style.display = "block";
           setTimeout(() => {
             notesSavedMessage.style.display = "none";
-          }, 3000);
+          }, 4000);
 
           // إرسال الملاحظات إلى الخادم (اختياري)
           const formData = new FormData();
-          formData.append("question", "مسدجات حبيبتي");
+          formData.append("question", "رسائل حبيبتي الخاصة");
           formData.append("answer", personalNotes.value);
 
           fetch('/submit', {
@@ -435,6 +458,28 @@ function submitAnswer(answer, audioBlob) {
           }).catch(error => {
             console.error("Error saving notes:", error);
           });
+
+          // تعطيل الزر مؤقتاً
+          saveNotesBtn.disabled = true;
+          saveNotesBtn.textContent = "تم الإرسال 💕";
+          setTimeout(() => {
+            saveNotesBtn.disabled = false;
+            saveNotesBtn.textContent = "ابعتي 💖";
+          }, 3000);
+        };
+
+        // إضافة وظيفة زر التخطي
+        skipBtn.onclick = () => {
+          // إضافة تفاعل لطيف للتخطي
+          addMagicalReaction('تخطي لطيف');
+
+          // إظهار رسالة تأكيد
+          notesSavedMessage.textContent = "اشطا يروحي ❤️";
+          notesSavedMessage.style.display = "block";
+
+          setTimeout(() => {
+            notesSavedMessage.style.display = "none";
+          }, 2000);
         };
 
         // إخفاء عناصر واجهة المستخدم الأخرى
@@ -815,3 +860,556 @@ function hexToRgb(hex) {
     b: parseInt(result[3], 16)
   } : null;
 }
+
+// 🌟 دالة التفاعل السحري مع الإجابات - محسنة ومتوازنة
+function addMagicalReaction(answer) {
+  const app = document.getElementById('app');
+
+  // تحديد نوع التفاعل بناءً على الإجابة
+  let reactionType = 'neutral';
+  let emojis = ['💖', '✨'];
+  let colors = ['#ff9eb5', '#ffe4b5'];
+  let intensity = 'normal';
+
+  if (answer.includes('مبسوطه') || answer.includes('مبسوطة') || answer.includes('سعيدة')) {
+    reactionType = 'happy';
+    emojis = ['💕', '🌸', '✨', '💖'];
+    colors = ['#ff9eb5', '#ffd6e7', '#ffe4b5'];
+    intensity = 'high';
+  } else if (answer.includes('متضايقة') || answer.includes('مش مبسوطه') || answer.includes('حزينة') || answer.includes('زعلانة')) {
+    reactionType = 'comfort';
+    emojis = ['💙', '😞'];
+    colors = ['#bbdefb', '#d1c4e9'];
+    intensity = 'low';
+  } else if (answer.includes('عاوزة أكتب') || answer.includes('عاوزة أسجل')) {
+    reactionType = 'creative';
+    emojis = ['✨', '💫', '🌟'];
+    colors = ['#ffe4b5', '#c8e6c9'];
+    intensity = 'medium';
+  }
+
+  // إضافة تأثير لطيف للبطاقة حسب الشدة
+  if (intensity === 'low') {
+    app.style.animation = 'gentle-comfort 0.8s ease-out';
+  } else if (intensity === 'high') {
+    app.style.animation = 'happy-reaction 0.6s ease-out';
+  } else {
+    app.style.animation = 'soft-reaction 0.5s ease-out';
+  }
+
+  // إنشاء تفاعل مناسب
+  createEmojiExplosion(emojis, colors, intensity);
+
+  // إضافة تأثير لوني مؤقت للخلفية
+  addTemporaryColorEffect(colors[0], intensity);
+
+  // إعادة ضبط الانيميشن بعد انتهائه
+  setTimeout(() => {
+    app.style.animation = '';
+  }, 800);
+}
+
+// 🎆 دالة إنشاء انفجار الإيموجي - محسنة مع شدة متغيرة
+function createEmojiExplosion(emojis, colors, intensity = 'normal') {
+  const container = document.body;
+
+  // تحديد عدد الإيموجي حسب الشدة
+  let numberOfEmojis;
+  let animationDuration;
+  let distance;
+
+  switch (intensity) {
+    case 'low':
+      numberOfEmojis = 3;
+      animationDuration = 2;
+      distance = 80;
+      break;
+    case 'high':
+      numberOfEmojis = 6;
+      animationDuration = 1.2;
+      distance = 120;
+      break;
+    default:
+      numberOfEmojis = 4;
+      animationDuration = 1.5;
+      distance = 100;
+  }
+
+  for (let i = 0; i < numberOfEmojis; i++) {
+    const emoji = document.createElement('div');
+    emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    emoji.style.position = 'fixed';
+    emoji.style.fontSize = intensity === 'low' ? '1.5rem' : '1.8rem';
+    emoji.style.pointerEvents = 'none';
+    emoji.style.zIndex = '9999';
+    emoji.style.left = '50%';
+    emoji.style.top = '50%';
+    emoji.style.transform = 'translate(-50%, -50%)';
+    emoji.style.filter = `drop-shadow(0 0 8px ${colors[Math.floor(Math.random() * colors.length)]})`;
+
+    // حساب اتجاه عشوائي
+    const angle = (Math.PI * 2 * i) / numberOfEmojis;
+    const finalDistance = distance + Math.random() * 50;
+    const endX = Math.cos(angle) * finalDistance;
+    const endY = Math.sin(angle) * finalDistance;
+
+    // إضافة الانيميشن
+    emoji.style.animation = `gentle-emoji-float ${animationDuration}s ease-out forwards`;
+    emoji.style.setProperty('--end-x', endX + 'px');
+    emoji.style.setProperty('--end-y', endY + 'px');
+
+    container.appendChild(emoji);
+
+    // إزالة الإيموجي بعد انتهاء الانيميشن
+    setTimeout(() => {
+      if (emoji.parentNode) {
+        emoji.parentNode.removeChild(emoji);
+      }
+    }, animationDuration * 1000);
+  }
+}
+
+// 🌈 دالة إضافة تأثير لوني مؤقت - محسنة مع شدة متغيرة
+function addTemporaryColorEffect(color, intensity = 'normal') {
+  const overlay = document.createElement('div');
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100%';
+  overlay.style.height = '100%';
+
+  // تحديد شدة التأثير
+  let opacity, duration, animationName;
+
+  switch (intensity) {
+    case 'low':
+      opacity = '10';
+      duration = 1.5;
+      animationName = 'gentle-color-pulse';
+      break;
+    case 'high':
+      opacity = '25';
+      duration = 0.8;
+      animationName = 'vibrant-color-pulse';
+      break;
+    default:
+      opacity = '15';
+      duration = 1;
+      animationName = 'soft-color-pulse';
+  }
+
+  overlay.style.background = `radial-gradient(circle at center, ${color}${opacity} 0%, transparent 60%)`;
+  overlay.style.pointerEvents = 'none';
+  overlay.style.zIndex = '1';
+  overlay.style.animation = `${animationName} ${duration}s ease-out`;
+
+  document.body.appendChild(overlay);
+
+  setTimeout(() => {
+    if (overlay.parentNode) {
+      overlay.parentNode.removeChild(overlay);
+    }
+  }, duration * 1000);
+}
+
+// 🎨 نظام تبديل الثيمات
+let currentTheme = 'pink'; // الثيم الافتراضي
+
+function initThemeSystem() {
+  // تحميل الثيم المحفوظ
+  const savedTheme = localStorage.getItem('selectedTheme') || 'pink';
+  switchTheme(savedTheme);
+}
+
+function switchTheme(themeName) {
+  const head = document.head;
+
+  // إزالة أي ثيم CSS موجود
+  const existingThemeLink = document.getElementById('theme-css');
+  if (existingThemeLink) {
+    existingThemeLink.remove();
+  }
+
+  // إضافة الثيم الجديد
+  if (themeName === 'blue') {
+    const blueThemeLink = document.createElement('link');
+    blueThemeLink.id = 'theme-css';
+    blueThemeLink.rel = 'stylesheet';
+    blueThemeLink.href = 'blue-theme.css';
+    head.appendChild(blueThemeLink);
+    currentTheme = 'blue';
+  } else {
+    // الثيم الوردي هو الافتراضي في styles.css
+    currentTheme = 'pink';
+  }
+
+  // حفظ الثيم المختار
+  localStorage.setItem('selectedTheme', currentTheme);
+
+  // إضافة تأثير انتقال سلس
+  document.body.style.transition = 'all 0.5s ease-in-out';
+  setTimeout(() => {
+    document.body.style.transition = '';
+  }, 500);
+}
+
+function toggleTheme() {
+  const newTheme = currentTheme === 'pink' ? 'blue' : 'pink';
+  switchTheme(newTheme);
+
+  // إضافة تفاعل لطيف عند تغيير الثيم
+  const app = document.getElementById('app');
+  if (app) {
+    app.style.animation = 'theme-switch 0.8s ease-out';
+    setTimeout(() => {
+      app.style.animation = '';
+    }, 800);
+  }
+}
+
+// تحديث modal الإعدادات لإضافة خيار الثيمات فقط
+function updateSettingsModal() {
+  const modalContent = document.querySelector('.modal-content');
+  if (modalContent) {
+    // استبدال كل المحتوى بالثيمات فقط
+    modalContent.innerHTML = `
+      <span class="close">&times;</span>
+      <h2>اختيار الثيم</h2>
+      <div class="theme-options">
+        <button class="theme-option ${currentTheme === 'pink' ? 'active' : ''}" data-theme="pink">
+          <div class="theme-preview pink-preview"></div>
+          <div class="theme-info">
+            <h3>🌸 ثيم بينك</h3>
+            <p>عشان بنوتي حبيبتي🥹❤️</p>
+          </div>
+        </button>
+        <button class="theme-option ${currentTheme === 'blue' ? 'active' : ''}" data-theme="blue">
+          <div class="theme-preview blue-preview"></div>
+          <div class="theme-info">
+            <h3>💙 ثيم الأزرق</h3>
+            <p>عشان يمنى اميرتي❤️👑</p>
+          </div>
+        </button>
+      </div>
+    `;
+
+    // إضافة CSS محسن للثيمات (مرة واحدة فقط)
+    if (!document.getElementById('theme-modal-styles')) {
+      const themeStyles = document.createElement('style');
+      themeStyles.id = 'theme-modal-styles';
+      themeStyles.textContent = `
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        backdrop-filter: blur(5px);
+      }
+
+      .modal-content {
+        background: white;
+        margin: 8% auto;
+        padding: 40px;
+        border-radius: 25px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+        position: relative;
+        animation: modalSlideIn 0.4s ease-out;
+        font-family: 'Cairo', sans-serif;
+      }
+
+      .modal-content h2 {
+        text-align: center;
+        margin-bottom: 35px;
+        font-size: 2rem;
+        color: #2c3e50;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-50px) scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .theme-options {
+        display: flex;
+        gap: 20px;
+        flex-direction: column;
+      }
+
+      .theme-option {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        padding: 25px;
+        border: 3px solid #e8e8e8;
+        border-radius: 20px;
+        background: #fafafa;
+        cursor: pointer;
+        transition: all 0.4s ease;
+        font-family: 'Cairo', sans-serif;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .theme-option::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.6s ease;
+      }
+
+      .theme-option:hover::before {
+        left: 100%;
+      }
+
+      .theme-option:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        border-color: #bbb;
+        background: white;
+      }
+
+      .theme-option.active {
+        border-color: #3498db;
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), white);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(52, 152, 219, 0.3);
+      }
+
+      .theme-option.active::after {
+        content: '✓';
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 1.5rem;
+        color: #3498db;
+        font-weight: bold;
+      }
+
+      .theme-preview {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .pink-preview {
+        background: linear-gradient(135deg, #ff9eb5, #ffd6e7, #ffe4b5);
+        box-shadow: 0 4px 15px rgba(255, 158, 181, 0.4);
+      }
+
+      .blue-preview {
+        background: linear-gradient(135deg, #3498db, #5dade2, #85c1e9);
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+      }
+
+      .theme-preview::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        background: rgba(255,255,255,0.3);
+        border-radius: 50%;
+        animation: gentle-pulse 2s infinite;
+      }
+
+      .theme-info h3 {
+        margin: 0 0 8px 0;
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #2c3e50;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+
+      .theme-info p {
+        margin: 0;
+        font-size: 1.1rem;
+        color: #5d6d7e;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .theme-option.active .theme-info h3 {
+        color: #3498db;
+      }
+
+      .theme-option.active .theme-info p {
+        color: #2980b9;
+      }
+
+      .close {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        width: 35px;
+        height: 35px;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #95a5a6;
+        transition: all 0.3s ease;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+      }
+
+      .close:hover {
+        color: #e74c3c;
+        background: #fff5f5;
+        border-color: #e74c3c;
+        transform: scale(1.1);
+      }
+
+      @keyframes gentle-pulse {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.1); }
+      }
+
+      /* Responsive للمودال */
+      @media (max-width: 768px) {
+        .modal-content {
+          margin: 5% auto;
+          padding: 30px 25px;
+          width: 95%;
+        }
+
+        .modal-content h2 {
+          font-size: 1.7rem;
+          margin-bottom: 25px;
+        }
+
+        .theme-option {
+          padding: 20px;
+          gap: 20px;
+        }
+
+        .theme-preview {
+          width: 50px;
+          height: 50px;
+        }
+
+        .theme-info h3 {
+          font-size: 1.2rem;
+        }
+
+        .theme-info p {
+          font-size: 1rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .modal-content {
+          margin: 3% auto;
+          padding: 25px 20px;
+          width: 98%;
+        }
+
+        .modal-content h2 {
+          font-size: 1.5rem;
+          margin-bottom: 20px;
+        }
+
+        .theme-option {
+          padding: 18px;
+          gap: 15px;
+        }
+
+        .theme-preview {
+          width: 45px;
+          height: 45px;
+        }
+
+        .theme-info h3 {
+          font-size: 1.1rem;
+        }
+
+        .theme-info p {
+          font-size: 0.95rem;
+        }
+
+        .close {
+          top: 15px;
+          right: 20px;
+          width: 30px;
+          height: 30px;
+          font-size: 20px;
+        }
+      }
+    `;
+      document.head.appendChild(themeStyles);
+    }
+
+    // إضافة event listeners
+    const closeBtn = modalContent.querySelector('.close');
+    closeBtn.addEventListener('click', () => {
+      document.getElementById('settingsModal').style.display = 'none';
+    });
+
+    const themeOptions = document.querySelectorAll('.theme-option');
+    themeOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const selectedTheme = option.getAttribute('data-theme');
+        switchTheme(selectedTheme);
+
+        // تحديث الأزرار النشطة
+        themeOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+
+        // إغلاق المودال بعد التغيير
+        setTimeout(() => {
+          document.getElementById('settingsModal').style.display = 'none';
+        }, 500);
+      });
+    });
+  }
+}
+
+// تهيئة نظام الثيمات عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+  initThemeSystem();
+
+  // تحديث المودال عند فتحه
+  const settingsBtn = document.getElementById('settingsBtn');
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      // إظهار المودال
+      const modal = document.getElementById('settingsModal');
+      if (modal) {
+        modal.style.display = 'block';
+        setTimeout(updateSettingsModal, 50);
+      }
+    });
+  }
+
+  // إغلاق المودال عند الضغط خارجه
+  window.addEventListener('click', (event) => {
+    const modal = document.getElementById('settingsModal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
