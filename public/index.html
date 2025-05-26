@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ff6f91">
+  <meta name="description" content="ويبسايت عشان اعرف مزاج حبيبتي">
+  <title>مزاج حبيبتي</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+</head>
+<body>
+  <!-- زر الإعدادات -->
+  <button id="settingsBtn" class="settings-button">⚙️</button>
+
+  <!-- مربع حوار الإعدادات -->
+  <div id="settingsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h2>إعدادات التخصيص</h2>
+
+      <div class="settings-section">
+        <h3>لون الخلفية</h3>
+        <div class="color-options">
+          <button class="color-option" data-color="#ffffff" style="background-color: #ffffff;"></button>
+          <button class="color-option" data-color="#f8e1e7" style="background-color: #f8e1e7;"></button>
+          <button class="color-option" data-color="#e0f8e1" style="background-color: #e0f8e1;"></button>
+          <button class="color-option" data-color="#e1e7f8" style="background-color: #e1e7f8;"></button>
+          <button class="color-option" data-color="#f8f8e1" style="background-color: #f8f8e1;"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>لون الأزرار</h3>
+        <div class="color-options">
+          <button class="button-color-option" data-color="#ff6f91" style="background-color: #ff6f91;"></button>
+          <button class="button-color-option" data-color="#6f91ff" style="background-color: #6f91ff;"></button>
+          <button class="button-color-option" data-color="#91ff6f" style="background-color: #91ff6f;"></button>
+          <button class="button-color-option" data-color="#ff916f" style="background-color: #ff916f;"></button>
+          <button class="button-color-option" data-color="#916fff" style="background-color: #916fff;"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>نوع الخط</h3>
+        <div class="font-options">
+          <button class="font-option" data-font="'Rubik', sans-serif">Rubik</button>
+          <button class="font-option" data-font="'Tajawal', sans-serif">Tajawal</button>
+          <button class="font-option" data-font="'Cairo', sans-serif">Cairo</button>
+          <button class="font-option" data-font="'El Messiri', sans-serif">El Messiri</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <h1 id="question">حبيبتي</h1>
+    <div id="choices"></div>
+    <input type="textarea" id="extraInput" placeholder="اكتبي اللي هتقوليه او مضايقك هنا يفراشتي" style="display: none;">
+    <button id="submitBtn" style="display: none;">إرسال</button>
+    <button id="recordButton" style="display: none;">🎤 تسجيل</button>
+    <button id="stopButton" style="display: none;">⏹️ إيقاف</button>
+    <audio id="audioPreview" controls style="display: none; width: 100%; margin-top: 10px;"></audio>
+    <button id="retryButton" style="display: none;">🔄 إعادة التسجيل</button>
+    <p id="recordingTimer" style="display: none; font-size: 18px; font-weight: bold; text-align: center; color: #ff4757;"></p>
+
+    <!-- عناصر إضافية للتوافق مع الكود -->
+    <div id="waveform" style="display: none;"></div>
+    <div id="volume-meter" style="display: none;">
+      <div id="volume-level"></div>
+    </div>
+  </div>
+
+  <script defer src="script.js"></script>
+  <script>
+    // تسجيل Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          })
+          .catch(error => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

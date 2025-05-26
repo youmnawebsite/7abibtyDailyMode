@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - مزاج حبيبتي</title>
+  <link rel="stylesheet" href="admin-styles.css">
+  <!-- إضافة Chart.js لعرض الرسوم البيانية -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>لوحة تحكم مزاج حبيبتي</h1>
+
+    <!-- علامات التبويب -->
+    <ul class="nav-tabs">
+      <li class="active" onclick="showTab('dashboard')">لوحة المعلومات</li>
+      <li onclick="showTab('responses')">الردود</li>
+      <li onclick="showTab('analytics')">التحليلات</li>
+
+      <li onclick="showTab('backups')">النسخ الاحتياطية</li>
+    </ul>
+
+    <!-- لوحة المعلومات -->
+    <div id="dashboard-tab" class="tab-content active">
+      <div class="dashboard">
+        <div class="card">
+          <div class="card-header">إجمالي الردود</div>
+          <div class="card-body" id="total-responses">0</div>
+          <div class="card-footer">كل الردود المسجلة</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">ردود اليوم</div>
+          <div class="card-body" id="today-responses">0</div>
+          <div class="card-footer">الردود المسجلة اليوم</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">المزاج العام</div>
+          <div class="card-body" id="mood-indicator">😊</div>
+          <div class="card-footer">بناءً على آخر الردود</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="mood-chart"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="responses-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- الردود -->
+    <div id="responses-tab" class="tab-content">
+      <div class="controls">
+        <div class="search-filters">
+          <input type="text" id="search" placeholder="البحث في السؤال أو الإجابة..." oninput="filterResponses()">
+          <select id="filter-question" onchange="filterResponses()">
+            <option value="">كل الأسئلة</option>
+            <!-- سيتم ملؤها ديناميكيًا -->
+          </select>
+          <select id="filter-mood" onchange="filterResponses()">
+            <option value="">كل الحالات المزاجية</option>
+            <option value="مبسوطه">مبسوطة</option>
+            <option value="متضايقة">متضايقة</option>
+            <option value="يعني">محايدة</option>
+          </select>
+          <input type="date" id="filter-date" onchange="filterResponses()">
+        </div>
+
+        <div class="action-buttons">
+          <button onclick="clearFilters()" class="secondary-btn">مسح الفلاتر</button>
+          <button onclick="exportToCSV()" class="secondary-btn">تصدير CSV</button>
+          <button onclick="deleteSelectedResponses()" class="danger-btn">حذف المحدد</button>
+          <button onclick="reorderAllIds()" class="primary-btn">إعادة ترتيب الـ IDs</button>
+        </div>
+      </div>
+
+      <div class="mobile-table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+              <th>ID</th>
+              <th>السؤال</th>
+              <th>الإجابة</th>
+              <th>التاريخ</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+
+          <tbody id="responses">
+            <!-- سيتم تحميل الردود هنا -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <button id="prev-page" onclick="changePage(-1)" disabled>السابق</button>
+        <span id="page-info">صفحة <span id="current-page">1</span> من <span id="total-pages">1</span></span>
+        <button id="next-page" onclick="changePage(1)" disabled>التالي</button>
+        <select id="page-size" onchange="changePageSize()">
+          <option value="10">10 ردود</option>
+          <option value="25">25 رد</option>
+          <option value="50">50 رد</option>
+          <option value="100">100 رد</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- التحليلات -->
+    <div id="analytics-tab" class="tab-content">
+      <h2>تحليلات المزاج</h2>
+
+      <div class="chart-container">
+        <canvas id="mood-distribution-chart"></canvas>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="mood-trend-chart"></canvas>
+      </div>
+
+      <div class="stats">
+        <h3>إحصائيات الأسئلة</h3>
+        <ul id="stats-list"></ul>
+      </div>
+
+      <div class="stats">
+        <h3>الكلمات الأكثر تكرارًا</h3>
+        <ul id="common-words"></ul>
+      </div>
+    </div>
+
+
+
+    <!-- النسخ الاحتياطية -->
+    <div id="backups-tab" class="tab-content">
+      <h2>إدارة النسخ الاحتياطية للتسجيلات الصوتية</h2>
+
+      <div class="controls">
+        <div class="action-buttons">
+          <button onclick="checkAudioFiles()" class="primary-btn">فحص ملفات الصوت</button>
+          <button onclick="loadBackups()" class="secondary-btn">تحديث قائمة النسخ الاحتياطية</button>
+        </div>
+      </div>
+
+      <div class="backup-section">
+        <h3>حالة ملفات الصوت</h3>
+        <div id="audio-status" class="status-container">
+          <p>اضغط على زر "فحص ملفات الصوت" لعرض حالة الملفات.</p>
+        </div>
+
+        <div id="missing-files-container" style="display: none;">
+          <h3>الملفات المفقودة</h3>
+          <div class="mobile-table-container">
+            <table id="missing-files-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>المسار</th>
+                  <th>التاريخ</th>
+                  <th>النسخة الاحتياطية</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="missing-files">
+                <!-- سيتم ملؤها ديناميكيًا -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="backup-section">
+        <h3>النسخ الاحتياطية المتوفرة</h3>
+        <div class="mobile-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم الملف</th>
+                <th>الحجم</th>
+                <th>تاريخ الإنشاء</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="backups-list">
+              <!-- سيتم ملؤها ديناميكيًا -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for updating response -->
+<!-- مربع حوار تحديث الرد -->
+<div class="modal" id="updateModal">
+  <div class="modal-content">
+    <h2>تحديث الرد</h2>
+    <input type="text" id="update-id" placeholder="رقم التعريف الجديد">
+    <input type="text" id="update-answer" placeholder="الإجابة الجديدة">
+    <input type="datetime-local" id="update-timestamp">
+    <div class="modal-buttons">
+      <button onclick="submitUpdate()">تحديث</button>
+      <button onclick="closeModal()" class="cancel">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+
+
+  <script>
+    let allResponses = [];
+    let currentResponseId = null;
+    let charts = {}; // لتخزين مراجع الرسوم البيانية
+    let uniqueQuestions = []; // لتخزين الأسئلة الفريدة
+
+
+    // تحميل البيانات عند تحميل الصفحة
+    window.onload = function() {
+      loadResponses();
+
+      loadBackups();
+
+      // تعيين التاريخ الافتراضي لفلتر التاريخ ليكون اليوم
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('filter-date').value = '';
+
+      // إضافة مستمع للتبويب
+      document.querySelectorAll('.nav-tabs li').forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabName = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+          if (tabName === 'backups') {
+            loadBackups();
+          }
+        });
+      });
+    };
+
+    // عرض علامة تبويب محددة
+    function showTab(tabName) {
+      // إخفاء جميع علامات التبويب
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // إزالة الفئة النشطة من جميع عناصر القائمة
+      document.querySelectorAll('.nav-tabs li').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // إظهار علامة التبويب المحددة
+      document.getElementById(tabName + '-tab').classList.add('active');
+
+      // تحديد عنصر القائمة المناسب
+      document.querySelector(`.nav-tabs li[onclick="showTab('${tabName}')"]`).classList.add('active');
+
+      // تحديث الرسوم البيانية إذا كانت علامة التبويب هي لوحة المعلومات أو التحليلات
+      if (tabName === 'dashboard' || tabName === 'analytics') {
+        updateCharts();
+      }
+    }
+
+    // تحميل الردود من الخادم
+    function loadResponses() {
+      fetch('/responses')
+        .then(res => res.json())
+        .then(data => {
+          allResponses = data;
+
+          // استخراج الأسئلة الفريدة
+          uniqueQuestions = [...new Set(data.map(response => response.question))];
+
+          // ملء قائمة الأسئلة في الفلتر
+          const filterQuestion = document.getElementById('filter-question');
+          filterQuestion.innerHTML = '<option value="">كل الأسئلة</option>';
+          uniqueQuestions.forEach(question => {
+            const option = document.createElement('option');
+            option.value = question;
+            option.textContent = question;
+            filterQuestion.appendChild(option);
+          });
+
+          renderResponses(data);
+          updateStats();
+          updateDashboard();
+          updateCharts();
+        })
+        .catch(error => {
+          console.error('Error loading responses:', error);
+        });
+    }
+
+    // تحديث لوحة المعلومات
+    function updateDashboard() {
+      if (!allResponses || allResponses.length === 0) return;
+
+      // إجمالي الردود
+      document.getElementById('total-responses').textContent = allResponses.length;
+
+      // ردود اليوم
+      const today = new Date().toISOString().split('T')[0];
+      const todayResponses = allResponses.filter(response =>
+        response.timestamp.startsWith(today)
+      ).length;
+      document.getElementById('today-responses').textContent = todayResponses;
+
+      // المزاج العام
+      const moodIndicator = getMoodIndicator();
+      document.getElementById('mood-indicator').textContent = moodIndicator;
+    }
+
+    // تحديث الرسوم البيانية
+    function updateCharts() {
+      // تنظيف الرسوم البيانية القديمة
+      Object.values(charts).forEach(chart => {
+        if (chart) chart.destroy();
+      });
+
+      // إنشاء رسم بياني للمزاج
+      createMoodChart();
+
+      // إنشاء رسم بياني للردود
+      createResponsesChart();
+
+      // إنشاء رسم بياني لتوزيع المزاج
+      createMoodDistributionChart();
+
+      // إنشاء رسم بياني لاتجاه المزاج
+      createMoodTrendChart();
+
+      // تحديث قائمة الكلمات الشائعة
+      updateCommonWords();
+    }
+
+    // إنشاء رسم بياني للمزاج
+    function createMoodChart() {
+      const ctx = document.getElementById('mood-chart').getContext('2d');
+
+      // تحليل بيانات المزاج
+      const moodData = analyzeMoodData();
+
+      charts.mood = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: moodData.labels,
+          datasets: [{
+            label: 'مستوى المزاج',
+            data: moodData.data,
+            backgroundColor: 'rgba(108, 92, 231, 0.2)',
+            borderColor: 'rgba(108, 92, 231, 1)',
+            borderWidth: 2,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'تغير المزاج خلال الأسبوع الماضي',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 10,
+              title: {
+                display: true,
+                text: 'مستوى المزاج (1-10)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'التاريخ'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // إنشاء رسم بياني للردود
+    function createResponsesChart() {
+      const ctx = document.getElementById('responses-chart').getContext('2d');
+
+      // تحليل بيانات الردود
+      const responseData = analyzeResponseData();
+
+      charts.responses = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: responseData.labels,
+          datasets: [{
+            label: 'عدد الردود',
+            data: responseData.data,
+            backgroundColor: 'rgba(253, 121, 168, 0.6)',
+            borderColor: 'rgba(253, 121, 168, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'عدد الردود حسب اليوم',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'عدد الردود'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'اليوم'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // إنشاء رسم بياني لتوزيع المزاج
+    function createMoodDistributionChart() {
+      const ctx = document.getElementById('mood-distribution-chart').getContext('2d');
+
+      // تحليل توزيع المزاج
+      const moodDistribution = analyzeMoodDistribution();
+
+      charts.moodDistribution = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: moodDistribution.labels,
+          datasets: [{
+            data: moodDistribution.data,
+            backgroundColor: [
+              'rgba(0, 184, 148, 0.6)',
+              'rgba(253, 203, 110, 0.6)',
+              'rgba(231, 76, 60, 0.6)',
+              'rgba(108, 92, 231, 0.6)'
+            ],
+            borderColor: [
+              'rgba(0, 184, 148, 1)',
+              'rgba(253, 203, 110, 1)',
+              'rgba(231, 76, 60, 1)',
+              'rgba(108, 92, 231, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'توزيع المزاج',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    }
+
+    // إنشاء رسم بياني لاتجاه المزاج
+    function createMoodTrendChart() {
+      const ctx = document.getElementById('mood-trend-chart').getContext('2d');
+
+      // تحليل اتجاه المزاج
+      const moodTrend = analyzeMoodTrend();
+
+      charts.moodTrend = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: moodTrend.labels,
+          datasets: moodTrend.datasets
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'اتجاه المزاج حسب السؤال',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 10,
+              title: {
+                display: true,
+                text: 'مستوى المزاج (1-10)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'التاريخ'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // تحليل بيانات المزاج
+    function analyzeMoodData() {
+      // الحصول على الأيام السبعة الماضية
+      const dates = [];
+      const data = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        dates.push(dateString);
+
+        // حساب متوسط المزاج لهذا اليوم
+        const dayResponses = allResponses.filter(response =>
+          response.timestamp.startsWith(dateString)
+        );
+
+        if (dayResponses.length > 0) {
+          const moodScore = calculateMoodScore(dayResponses);
+          data.push(moodScore);
+        } else {
+          data.push(null); // لا توجد بيانات لهذا اليوم
+        }
+      }
+
+      return {
+        labels: dates.map(date => formatDate(date)),
+        data: data
+      };
+    }
+
+    // تحليل بيانات الردود
+    function analyzeResponseData() {
+      // الحصول على الأيام السبعة الماضية
+      const dates = [];
+      const data = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        dates.push(dateString);
+
+        // حساب عدد الردود لهذا اليوم
+        const dayResponses = allResponses.filter(response =>
+          response.timestamp.startsWith(dateString)
+        ).length;
+
+        data.push(dayResponses);
+      }
+
+      return {
+        labels: dates.map(date => formatDate(date)),
+        data: data
+      };
+    }
+
+    // تحليل توزيع المزاج
+    function analyzeMoodDistribution() {
+      const moodCounts = {
+        'مبسوطة': 0,
+        'محايدة': 0,
+        'متضايقة': 0,
+        'أخرى': 0
+      };
+
+      allResponses.forEach(response => {
+        if (response.answer.includes('مبسوطه')) {
+          moodCounts['مبسوطة']++;
+        } else if (response.answer.includes('يعني شويه')) {
+          moodCounts['محايدة']++;
+        } else if (response.answer.includes('متضايقة') || response.answer.includes('مش مبسوطه')) {
+          moodCounts['متضايقة']++;
+        } else {
+          moodCounts['أخرى']++;
+        }
+      });
+
+      return {
+        labels: Object.keys(moodCounts),
+        data: Object.values(moodCounts)
+      };
+    }
+
+    // تحليل اتجاه المزاج
+    function analyzeMoodTrend() {
+      // الحصول على الأيام السبعة الماضية
+      const dates = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateString = date.toISOString().split('T')[0];
+        dates.push(dateString);
+      }
+
+      // إنشاء مجموعات البيانات لكل سؤال
+      const datasets = [];
+      const colors = [
+        'rgba(108, 92, 231, 1)',
+        'rgba(253, 121, 168, 1)',
+        'rgba(0, 184, 148, 1)',
+        'rgba(253, 203, 110, 1)'
+      ];
+
+      uniqueQuestions.forEach((question, index) => {
+        const data = [];
+
+        dates.forEach(date => {
+          // الحصول على الردود لهذا السؤال في هذا اليوم
+          const dayResponses = allResponses.filter(response =>
+            response.timestamp.startsWith(date) && response.question === question
+          );
+
+          if (dayResponses.length > 0) {
+            const moodScore = calculateMoodScore(dayResponses);
+            data.push(moodScore);
+          } else {
+            data.push(null); // لا توجد بيانات لهذا اليوم
+          }
+        });
+
+        datasets.push({
+          label: question,
+          data: data,
+          borderColor: colors[index % colors.length],
+          backgroundColor: colors[index % colors.length].replace('1)', '0.2)'),
+          borderWidth: 2,
+          tension: 0.3
+        });
+      });
+
+      return {
+        labels: dates.map(date => formatDate(date)),
+        datasets: datasets
+      };
+    }
+
+    // حساب درجة المزاج
+    function calculateMoodScore(responses) {
+      let totalScore = 0;
+      let count = 0;
+
+      responses.forEach(response => {
+        let score = 5; // قيمة افتراضية محايدة
+
+        if (response.answer.includes('مبسوطه')) {
+          score = 8;
+        } else if (response.answer.includes('يعني شويه')) {
+          score = 5;
+        } else if (response.answer.includes('متضايقة') || response.answer.includes('مش مبسوطه')) {
+          score = 2;
+        }
+
+        totalScore += score;
+        count++;
+      });
+
+      return count > 0 ? totalScore / count : 5;
+    }
+
+    // الحصول على مؤشر المزاج
+    function getMoodIndicator() {
+      if (!allResponses || allResponses.length === 0) return '😐';
+
+      // الحصول على آخر 5 ردود
+      const recentResponses = allResponses.slice(0, 5);
+      const moodScore = calculateMoodScore(recentResponses);
+
+      if (moodScore >= 7) {
+        return '😊';
+      } else if (moodScore >= 4) {
+        return '😐';
+      } else {
+        return '😔';
+      }
+    }
+
+    // تحديث قائمة الكلمات الشائعة
+    function updateCommonWords() {
+      // جمع جميع الإجابات النصية
+      const textAnswers = allResponses
+        .filter(response => !isAudioFile(response.answer))
+        .map(response => response.answer);
+
+      // تحليل الكلمات الشائعة
+      const wordCounts = {};
+      const stopWords = ['في', 'من', 'على', 'إلى', 'عن', 'مع', 'هذا', 'هذه', 'ذلك', 'تلك', 'هو', 'هي', 'أنا', 'أنت', 'نحن', 'هم'];
+
+      textAnswers.forEach(answer => {
+        const words = answer.split(/\s+/);
+        words.forEach(word => {
+          word = word.replace(/[^\p{L}\p{N}]/gu, '').trim().toLowerCase();
+          if (word && word.length > 1 && !stopWords.includes(word)) {
+            wordCounts[word] = (wordCounts[word] || 0) + 1;
+          }
+        });
+      });
+
+      // ترتيب الكلمات حسب التكرار
+      const sortedWords = Object.entries(wordCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+      // عرض الكلمات الشائعة
+      const commonWordsList = document.getElementById('common-words');
+      commonWordsList.innerHTML = '';
+
+      sortedWords.forEach(([word, count]) => {
+        const li = document.createElement('li');
+        li.textContent = `${word}: ${count} مرة`;
+        commonWordsList.appendChild(li);
+      });
+    }
+
+    // تنسيق التاريخ
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    // التحقق مما إذا كانت الإجابة هي ملف صوتي
+    function isAudioFile(answer) {
+      if (!answer) return false;
+      return answer.startsWith('/uploads/') || /\.(mp3|wav|ogg|webm|audio)$/i.test(answer);
+    }
+
+    // الحصول على نوع MIME المناسب لملفات الصوت
+    function getAudioMimeType(filePath) {
+      if (!filePath) return 'audio/mpeg';
+      if (filePath.endsWith('.mp3')) return 'audio/mpeg';
+      if (filePath.endsWith('.wav')) return 'audio/wav';
+      if (filePath.endsWith('.ogg')) return 'audio/ogg';
+      if (filePath.endsWith('.webm')) return 'audio/webm';
+      return 'audio/mpeg'; // قيمة افتراضية
+    }
+
+    // متغيرات الترقيم
+    let currentPage = 1;
+    let pageSize = 10;
+    let filteredResponses = [];
+
+    // عرض الردود
+    function renderResponses(data) {
+      filteredResponses = [...data]; // حفظ البيانات المصفاة للترقيم
+
+      // تطبيق الترقيم
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedData = data.slice(startIndex, endIndex);
+
+      // تحديث معلومات الترقيم
+      updatePagination(data.length);
+
+      const tbody = document.getElementById('responses');
+      tbody.innerHTML = '';
+
+      if (data.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="6" style="text-align: center;">لا توجد ردود متاحة</td>`;
+        tbody.appendChild(row);
+        return;
+      }
+
+      paginatedData.forEach(response => {
+        const row = document.createElement('tr');
+        const formattedDate = new Date(response.timestamp).toLocaleString('ar-EG');
+
+        // التحقق مما إذا كان ملف صوتي
+        const isAudio = isAudioFile(response.answer);
+        const audioMimeType = isAudio ? getAudioMimeType(response.answer) : '';
+
+        // تحديد لون الخلفية بناءً على المزاج
+        let rowClass = '';
+        if (response.answer.includes('مبسوطه')) {
+          rowClass = 'background-color: rgba(0, 184, 148, 0.1);';
+        } else if (response.answer.includes('متضايقة') || response.answer.includes('مش مبسوطه')) {
+          rowClass = 'background-color: rgba(231, 76, 60, 0.1);';
+        } else if (response.answer.includes('يعني شويه')) {
+          rowClass = 'background-color: rgba(253, 203, 110, 0.1);';
+        }
+
+        row.style = rowClass;
+        row.innerHTML = `
+          <td><input type="checkbox" class="select-response" value="${response.id}"></td>
+          <td>${response.id}</td>
+          <td>${response.question}</td>
+          <td>
+            ${isAudio ?
+              `<div class="audio-player" data-src="${response.answer}" data-type="${audioMimeType}">
+                <div class="custom-audio-player">
+                  <div class="audio-progress-container">
+                    <div class="audio-progress-bar"></div>
+                  </div>
+                  <div class="audio-controls">
+                    <div class="audio-buttons">
+                      <button class="play-btn" title="تشغيل">▶️</button>
+                      <button class="pause-btn" title="إيقاف مؤقت" style="display:none;">⏸️</button>
+                      <button class="stop-btn" title="إيقاف">⏹️</button>
+                    </div>
+                    <div class="audio-time">
+                      <span class="current-time">00:00</span> / <span class="total-time">00:00</span>
+                    </div>
+                    <div class="audio-volume">
+                      <span>🔊</span>
+                      <input type="range" min="0" max="1" step="0.1" value="1" class="volume-control">
+                    </div>
+                  </div>
+                </div>
+                <div class="audio-player-controls">
+                  <a href="${response.answer}" download="${response.id}_audio${getFileExtension(response.answer)}" title="تحميل الملف الصوتي" class="download-btn">⬇️ تحميل</a>
+                </div>
+              </div>`
+              : response.answer}
+          </td>
+          <td>${formattedDate}</td>
+          <td>
+            <button class="delete-btn" onclick="deleteResponse(${response.id})">حذف</button>
+            <button class="edit-btn" onclick="openUpdateModal(${response.id})">تعديل</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      // تحسين مشغل الصوت
+      enhanceAudioPlayers();
+    }
+
+    // تحسين مشغلات الصوت
+    function enhanceAudioPlayers() {
+      // تهيئة جميع مشغلات الصوت المخصصة
+      document.querySelectorAll('.audio-player').forEach(playerContainer => {
+        const audioSrc = playerContainer.getAttribute('data-src');
+        const audioType = playerContainer.getAttribute('data-type');
+
+        if (!audioSrc) return;
+
+        // إنشاء عنصر الصوت
+        const audio = new Audio();
+        audio.src = audioSrc;
+        audio.preload = 'metadata';
+
+        // الحصول على عناصر التحكم
+        const playBtn = playerContainer.querySelector('.play-btn');
+        const pauseBtn = playerContainer.querySelector('.pause-btn');
+        const stopBtn = playerContainer.querySelector('.stop-btn');
+        const progressBar = playerContainer.querySelector('.audio-progress-bar');
+        const progressContainer = playerContainer.querySelector('.audio-progress-container');
+        const currentTimeDisplay = playerContainer.querySelector('.current-time');
+        const totalTimeDisplay = playerContainer.querySelector('.total-time');
+        const volumeControl = playerContainer.querySelector('.volume-control');
+
+        // تعيين مستوى الصوت الأقصى
+        audio.volume = 1.0;
+
+        // تحميل البيانات الوصفية للصوت
+        audio.addEventListener('loadedmetadata', () => {
+          totalTimeDisplay.textContent = formatTime(audio.duration);
+        });
+
+        // تحديث شريط التقدم والوقت الحالي
+        audio.addEventListener('timeupdate', () => {
+          const progress = (audio.currentTime / audio.duration) * 100;
+          progressBar.style.width = `${progress}%`;
+          currentTimeDisplay.textContent = formatTime(audio.currentTime);
+        });
+
+        // تشغيل الصوت
+        playBtn.addEventListener('click', () => {
+          // إيقاف جميع مشغلات الصوت الأخرى
+          document.querySelectorAll('.audio-player').forEach(otherPlayer => {
+            if (otherPlayer !== playerContainer) {
+              const otherPlayBtn = otherPlayer.querySelector('.play-btn');
+              const otherPauseBtn = otherPlayer.querySelector('.pause-btn');
+              if (otherPlayBtn && otherPauseBtn) {
+                otherPlayBtn.style.display = 'block';
+                otherPauseBtn.style.display = 'none';
+              }
+            }
+          });
+
+          // تحميل الصوت مرة أخرى للتأكد من تحديثه
+          audio.load();
+
+          // إضافة معالج أحداث لحالة الخطأ
+          audio.onerror = function(e) {
+            console.error('Audio error:', e);
+            console.error('Audio error code:', audio.error ? audio.error.code : 'unknown');
+            console.error('Audio src:', audio.src);
+
+            // محاولة إصلاح المسار
+            if (audio.src.startsWith(window.location.origin)) {
+              // المسار مطلق، لا داعي للتغيير
+            } else {
+              // تحويل المسار النسبي إلى مطلق
+              const fixedSrc = window.location.origin + audioSrc;
+              console.log('Trying fixed path:', fixedSrc);
+              audio.src = fixedSrc;
+              audio.load();
+            }
+          };
+
+          // تشغيل الصوت الحالي
+          const playPromise = audio.play();
+
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error('Error playing audio:', error);
+
+              // محاولة إصلاح المسار وإعادة التشغيل
+              if (!audio.src.startsWith(window.location.origin)) {
+                const fixedSrc = window.location.origin + audioSrc;
+                console.log('Trying fixed path on error:', fixedSrc);
+                audio.src = fixedSrc;
+                audio.load();
+                audio.play().catch(e => {
+                  console.error('Still failed after path fix:', e);
+                  alert('حدث خطأ أثناء تشغيل الصوت. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+                });
+              } else {
+                alert('حدث خطأ أثناء تشغيل الصوت. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
+              }
+            });
+          }
+
+          // تبديل الأزرار
+          playBtn.style.display = 'none';
+          pauseBtn.style.display = 'block';
+        });
+
+        // إيقاف الصوت مؤقتًا
+        pauseBtn.addEventListener('click', () => {
+          audio.pause();
+
+          // تبديل الأزرار
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
+
+        // إيقاف الصوت
+        stopBtn.addEventListener('click', () => {
+          audio.pause();
+          audio.currentTime = 0;
+
+          // تبديل الأزرار
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
+
+        // التحكم في مستوى الصوت
+        volumeControl.addEventListener('input', () => {
+          audio.volume = volumeControl.value;
+        });
+
+        // التحكم في التقدم بالنقر على شريط التقدم
+        progressContainer.addEventListener('click', (event) => {
+          const rect = progressContainer.getBoundingClientRect();
+          const clickPosition = (event.clientX - rect.left) / rect.width;
+          audio.currentTime = clickPosition * audio.duration;
+        });
+
+        // إعادة تعيين عند انتهاء الصوت
+        audio.addEventListener('ended', () => {
+          audio.currentTime = 0;
+          playBtn.style.display = 'block';
+          pauseBtn.style.display = 'none';
+        });
+      });
+    }
+
+    // تنسيق الوقت (ثواني إلى mm:ss)
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return '00:00';
+
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = Math.floor(seconds % 60);
+
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    // الحصول على امتداد الملف من المسار
+    function getFileExtension(filePath) {
+      if (!filePath) return '.mp3';
+
+      const extensions = ['.mp3', '.wav', '.ogg', '.webm', '.audio'];
+
+      for (const ext of extensions) {
+        if (filePath.toLowerCase().endsWith(ext)) {
+          return ext;
+        }
+      }
+
+      return '.mp3'; // امتداد افتراضي
+    }
+
+    // تحديث معلومات الترقيم
+    function updatePagination(totalItems) {
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      document.getElementById('current-page').textContent = currentPage;
+      document.getElementById('total-pages').textContent = totalPages;
+
+      // تحديث حالة أزرار التنقل
+      document.getElementById('prev-page').disabled = currentPage <= 1;
+      document.getElementById('next-page').disabled = currentPage >= totalPages;
+
+      // تحديث حجم الصفحة المحدد
+      document.getElementById('page-size').value = pageSize;
+    }
+
+    // تغيير الصفحة
+    function changePage(delta) {
+      currentPage += delta;
+      renderResponses(filteredResponses);
+    }
+
+    // تغيير حجم الصفحة
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById('page-size').value);
+      currentPage = 1; // العودة إلى الصفحة الأولى عند تغيير حجم الصفحة
+      renderResponses(filteredResponses);
+    }
+
+    // إعادة ترتيب جميع الـ IDs
+    function reorderAllIds() {
+      if (!confirm('هل أنت متأكد من إعادة ترتيب جميع الـ IDs؟ سيتم ترتيبها بشكل تسلسلي من 1.')) return;
+
+      // إنشاء نسخة مرتبة من الردود حسب التاريخ
+      const sortedResponses = [...allResponses].sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
+      );
+
+      // إنشاء مصفوفة من التحديثات
+      const updates = sortedResponses.map((response, index) => ({
+        id: response.id,
+        newId: index + 1
+      }));
+
+      // إرسال طلب التحديث
+      fetch('/reorder-ids', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ updates })
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('تم إعادة ترتيب الـ IDs بنجاح!');
+          loadResponses();
+        } else {
+          throw new Error('فشل إعادة ترتيب الـ IDs');
+        }
+      })
+      .catch(error => {
+        console.error('Error reordering IDs:', error);
+        alert('حدث خطأ أثناء إعادة ترتيب الـ IDs. سنقوم بتحديث الـ IDs محليًا.');
+
+        // تحديث الـ IDs محليًا إذا فشل الطلب
+        updateIdsLocally(updates);
+      });
+    }
+
+    // تحديث الـ IDs محليًا
+    function updateIdsLocally(updates) {
+      // تحديث الـ IDs في الذاكرة
+      updates.forEach(update => {
+        const response = allResponses.find(r => r.id === update.id);
+        if (response) {
+          response.id = update.newId;
+        }
+      });
+
+      // إعادة عرض الردود
+      renderResponses(filteredResponses);
+
+      alert('تم تحديث الـ IDs محليًا. قد تحتاج إلى إعادة تحميل الصفحة لرؤية التغييرات بشكل كامل.');
+    }
+
+    // تصفية الردود
+    function filterResponses() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const filterDate = document.getElementById('filter-date').value;
+      const filterQuestion = document.getElementById('filter-question').value;
+      const filterMood = document.getElementById('filter-mood').value;
+
+      let filtered = allResponses;
+
+      // تصفية حسب البحث النصي
+      if (search) {
+        filtered = filtered.filter(
+          response =>
+            response.question.toLowerCase().includes(search) ||
+            response.answer.toLowerCase().includes(search) ||
+            response.id.toString().includes(search)
+        );
+      }
+
+      // تصفية حسب التاريخ
+      if (filterDate) {
+        filtered = filtered.filter(response =>
+          response.timestamp.startsWith(filterDate)
+        );
+      }
+
+      // تصفية حسب السؤال
+      if (filterQuestion) {
+        filtered = filtered.filter(response =>
+          response.question === filterQuestion
+        );
+      }
+
+      // تصفية حسب المزاج
+      if (filterMood) {
+        filtered = filtered.filter(response => {
+          if (filterMood === 'مبسوطه' && response.answer.includes('مبسوطه')) {
+            return true;
+          } else if (filterMood === 'متضايقة' && (response.answer.includes('متضايقة') || response.answer.includes('مش مبسوطه'))) {
+            return true;
+          } else if (filterMood === 'يعني' && response.answer.includes('يعني شويه')) {
+            return true;
+          }
+          return false;
+        });
+      }
+
+      // إعادة تعيين الصفحة الحالية عند تغيير الفلتر
+      currentPage = 1;
+
+      // عرض النتائج المصفاة
+      renderResponses(filtered);
+    }
+
+    // مسح الفلاتر
+    function clearFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('filter-date').value = '';
+      document.getElementById('filter-question').value = '';
+      document.getElementById('filter-mood').value = '';
+
+      // إعادة تعيين الصفحة الحالية
+      currentPage = 1;
+
+      renderResponses(allResponses);
+    }
+
+    // حذف رد
+    function deleteResponse(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا الرد؟')) return;
+
+      fetch(`/responses/${id}`, { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) {
+            alert('تم حذف الرد بنجاح!');
+            loadResponses();
+          } else {
+            alert('حدث خطأ أثناء حذف الرد.');
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting response:', error);
+          alert('حدث خطأ أثناء حذف الرد.');
+        });
+    }
+
+    // حذف جميع الردود
+    function deleteAllResponses() {
+      if (!confirm('هل أنت متأكد من حذف جميع الردود؟ هذا الإجراء لا يمكن التراجع عنه!')) return;
+
+      fetch('/responses', { method: 'DELETE' })
+        .then(res => {
+          if (res.ok) {
+            alert('تم حذف جميع الردود بنجاح!');
+            loadResponses();
+          } else {
+            alert('حدث خطأ أثناء حذف الردود.');
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting all responses:', error);
+          alert('حدث خطأ أثناء حذف الردود.');
+        });
+    }
+
+    // فتح مربع حوار التحديث
+    function openUpdateModal(id) {
+      currentResponseId = id;
+
+      // البحث عن الرد الحالي
+      const response = allResponses.find(r => r.id === id);
+
+      if (response) {
+        // ملء الحقول بالقيم الحالية
+        document.getElementById('update-id').value = response.id;
+
+        // لا نملأ حقل الإجابة إذا كانت ملف صوتي
+        if (!isAudioFile(response.answer)) {
+          document.getElementById('update-answer').value = response.answer;
+        } else {
+          document.getElementById('update-answer').value = '';
+          document.getElementById('update-answer').placeholder = 'تسجيل صوتي (لا يمكن تعديله)';
+        }
+
+        // تنسيق التاريخ لحقل datetime-local
+        const timestamp = new Date(response.timestamp);
+        const formattedTimestamp = timestamp.toISOString().slice(0, 16);
+        document.getElementById('update-timestamp').value = formattedTimestamp;
+      }
+
+      document.getElementById('updateModal').style.display = 'flex';
+    }
+
+    // إغلاق مربع الحوار
+    function closeModal() {
+      document.getElementById('updateModal').style.display = 'none';
+    }
+
+    // إرسال التحديث
+    function submitUpdate() {
+      const newResponseId = document.getElementById('update-id').value;
+      const newAnswer = document.getElementById('update-answer').value;
+      const newTimestamp = document.getElementById('update-timestamp').value;
+
+      // التحقق من وجود بيانات للتحديث
+      if (!newAnswer && !newTimestamp && !newResponseId) {
+        alert('الرجاء إدخال بيانات للتحديث.');
+        return;
+      }
+
+      // إنشاء كائن التحديث
+      const updateData = {};
+
+      if (newResponseId) {
+        updateData.id = newResponseId;
+      }
+
+      if (newAnswer) {
+        updateData.answer = newAnswer;
+      }
+
+      if (newTimestamp) {
+        updateData.timestamp = newTimestamp;
+      }
+
+      // إرسال طلب التحديث
+      fetch(`/responses/${currentResponseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      })
+        .then(res => {
+          if (res.ok) {
+            alert('تم تحديث الرد بنجاح!');
+            closeModal();
+            loadResponses();
+          } else {
+            alert('حدث خطأ أثناء تحديث الرد.');
+          }
+        })
+        .catch(error => {
+          console.error('Error updating response:', error);
+          alert('حدث خطأ أثناء تحديث الرد.');
+        });
+    }
+
+    function exportToCSV() {
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + allResponses.map(response => `${response.id},${response.question},${response.answer},${response.timestamp}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "responses.csv");
+      document.body.appendChild(link);
+      link.click();
+    }
+
+    // تحديث الإحصائيات
+    function updateStats() {
+      const statsList = document.getElementById('stats-list');
+      statsList.innerHTML = '';
+
+      // حساب عدد الردود لكل سؤال
+      const questionCounts = allResponses.reduce((acc, response) => {
+        acc[response.question] = (acc[response.question] || 0) + 1;
+        return acc;
+      }, {});
+
+      // حساب توزيع المزاج لكل سؤال
+      const questionMoods = {};
+
+      uniqueQuestions.forEach(question => {
+        questionMoods[question] = {
+          'مبسوطة': 0,
+          'محايدة': 0,
+          'متضايقة': 0
+        };
+      });
+
+      allResponses.forEach(response => {
+        if (response.answer.includes('مبسوطه')) {
+          questionMoods[response.question]['مبسوطة']++;
+        } else if (response.answer.includes('يعني شويه')) {
+          questionMoods[response.question]['محايدة']++;
+        } else if (response.answer.includes('متضايقة') || response.answer.includes('مش مبسوطه')) {
+          questionMoods[response.question]['متضايقة']++;
+        }
+      });
+
+      // عرض الإحصائيات
+      for (const [question, count] of Object.entries(questionCounts)) {
+        const li = document.createElement('li');
+
+        // حساب النسب المئوية
+        const happy = questionMoods[question]['مبسوطة'];
+        const neutral = questionMoods[question]['محايدة'];
+        const sad = questionMoods[question]['متضايقة'];
+
+        const happyPercent = Math.round((happy / count) * 100) || 0;
+        const neutralPercent = Math.round((neutral / count) * 100) || 0;
+        const sadPercent = Math.round((sad / count) * 100) || 0;
+
+        li.innerHTML = `
+          <strong>${question}</strong>: ${count} إجابة
+          <div style="display: flex; height: 10px; width: 100%; margin-top: 5px; border-radius: 5px; overflow: hidden;">
+            <div style="width: ${happyPercent}%; background-color: rgba(0, 184, 148, 0.8);"></div>
+            <div style="width: ${neutralPercent}%; background-color: rgba(253, 203, 110, 0.8);"></div>
+            <div style="width: ${sadPercent}%; background-color: rgba(231, 76, 60, 0.8);"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.8em; margin-top: 2px;">
+            <span>مبسوطة: ${happyPercent}%</span>
+            <span>محايدة: ${neutralPercent}%</span>
+            <span>متضايقة: ${sadPercent}%</span>
+          </div>
+        `;
+
+        statsList.appendChild(li);
+      }
+    }
+
+    // تصدير البيانات إلى CSV
+    function exportToCSV() {
+      // إنشاء رأس الملف
+      const headers = ["ID", "السؤال", "الإجابة", "التاريخ"];
+
+      // تحويل البيانات إلى تنسيق CSV
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + allResponses.map(response => {
+            // معالجة الإجابة لتجنب مشاكل الفواصل
+            let answer = response.answer;
+            if (isAudioFile(answer)) {
+              answer = "تسجيل صوتي";
+            } else {
+              // استبدال الفواصل بمسافات لتجنب مشاكل تنسيق CSV
+              answer = answer.replace(/,/g, " ");
+            }
+
+            return `${response.id},${response.question},${answer},${response.timestamp}`;
+          }).join("\n");
+
+      // إنشاء رابط التنزيل
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `ردود_المزاج_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // حذف الردود المحددة
+    function deleteSelectedResponses() {
+      const selected = Array.from(document.querySelectorAll('.select-response:checked')).map(cb => cb.value);
+
+      if (selected.length === 0) {
+        alert('لم يتم تحديد أي ردود.');
+        return;
+      }
+
+      if (!confirm(`هل أنت متأكد من حذف ${selected.length} رد محدد؟`)) return;
+
+      Promise.all(selected.map(id => fetch(`/responses/${id}`, { method: 'DELETE' })))
+        .then(() => {
+          alert('تم حذف الردود المحددة بنجاح!');
+          loadResponses();
+        })
+        .catch(error => {
+          console.error('Error deleting responses:', error);
+          alert('حدث خطأ أثناء حذف الردود.');
+        });
+    }
+
+    // تحديد/إلغاء تحديد جميع الردود
+    function toggleSelectAll() {
+      const checkboxes = document.querySelectorAll('.select-response');
+      const selectAll = document.getElementById('select-all').checked;
+      checkboxes.forEach(cb => cb.checked = selectAll);
+    }
+
+
+
+    // تنسيق الوقت
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+
+      // إذا كان الوقت بتنسيق "HH:MM:SS"، نقوم بتحويله إلى "HH:MM"
+      if (timeStr.length > 5) {
+        return timeStr.substring(0, 5);
+      }
+
+      return timeStr;
+    }
+
+    // فحص ملفات الصوت
+    function checkAudioFiles() {
+      const statusContainer = document.getElementById('audio-status');
+      statusContainer.innerHTML = '<p>جاري فحص ملفات الصوت...</p>';
+
+      fetch('/check-audio-files')
+        .then(res => res.json())
+        .then(data => {
+          const { totalAudioResponses, fileStatus } = data;
+
+          // حساب الإحصائيات
+          const missingFiles = fileStatus.filter(file => !file.exists);
+          const hasBackup = fileStatus.filter(file => file.backup_exists);
+
+          // عرض الإحصائيات
+          let statusHTML = `
+            <div class="backup-stats">
+              <div class="backup-stat">
+                <h4>إجمالي التسجيلات</h4>
+                <div class="value">${totalAudioResponses}</div>
+              </div>
+              <div class="backup-stat">
+                <h4>الملفات المفقودة</h4>
+                <div class="value">${missingFiles.length}</div>
+              </div>
+              <div class="backup-stat">
+                <h4>لها نسخة احتياطية</h4>
+                <div class="value">${hasBackup.length}</div>
+              </div>
+            </div>
+          `;
+
+          // إضافة رسالة الحالة
+          if (missingFiles.length === 0) {
+            statusHTML += `
+              <div class="status-container status-success">
+                <p>جميع ملفات الصوت موجودة وسليمة.</p>
+              </div>
+            `;
+            document.getElementById('missing-files-container').style.display = 'none';
+          } else {
+            statusHTML += `
+              <div class="status-container status-warning">
+                <p>هناك ${missingFiles.length} ملف صوتي مفقود. يمكنك استعادتها من النسخ الاحتياطية إذا كانت متوفرة.</p>
+              </div>
+            `;
+
+            // عرض الملفات المفقودة
+            document.getElementById('missing-files-container').style.display = 'block';
+            const missingFilesTable = document.getElementById('missing-files');
+            missingFilesTable.innerHTML = '';
+
+            missingFiles.forEach(file => {
+              const row = document.createElement('tr');
+              const formattedDate = new Date(file.timestamp).toLocaleString('ar-EG');
+
+              row.innerHTML = `
+                <td>${file.id}</td>
+                <td>${file.path}</td>
+                <td>${formattedDate}</td>
+                <td>${file.backup_exists ? 'متوفرة' : 'غير متوفرة'}</td>
+                <td>
+                  ${file.backup_exists ?
+                    `<button class="restore-btn" onclick="restoreAudioFile(${file.id})">استعادة</button>` :
+                    'لا يمكن الاستعادة'}
+                </td>
+              `;
+
+              missingFilesTable.appendChild(row);
+            });
+          }
+
+          statusContainer.innerHTML = statusHTML;
+        })
+        .catch(error => {
+          console.error('Error checking audio files:', error);
+          statusContainer.innerHTML = `
+            <div class="status-container status-error">
+              <p>حدث خطأ أثناء فحص ملفات الصوت. يرجى المحاولة مرة أخرى.</p>
+            </div>
+          `;
+        });
+    }
+
+    // تحميل النسخ الاحتياطية
+    function loadBackups() {
+      fetch('/backups')
+        .then(res => res.json())
+        .then(data => {
+          const { total, backups } = data;
+
+          const backupsList = document.getElementById('backups-list');
+          backupsList.innerHTML = '';
+
+          if (backups.length === 0) {
+            backupsList.innerHTML = '<tr><td colspan="4" style="text-align: center;">لا توجد نسخ احتياطية متوفرة</td></tr>';
+            return;
+          }
+
+          backups.forEach(backup => {
+            const row = document.createElement('tr');
+            const formattedDate = new Date(backup.created).toLocaleString('ar-EG');
+            const formattedSize = formatFileSize(backup.size);
+
+            row.innerHTML = `
+              <td>${backup.filename}</td>
+              <td>${formattedSize}</td>
+              <td>${formattedDate}</td>
+              <td>
+                <a href="${backup.path}" download class="download-btn">تحميل</a>
+              </td>
+            `;
+
+            backupsList.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading backups:', error);
+          document.getElementById('backups-list').innerHTML =
+            '<tr><td colspan="4" style="text-align: center;">حدث خطأ أثناء تحميل النسخ الاحتياطية</td></tr>';
+        });
+    }
+
+    // استعادة ملف صوتي من النسخة الاحتياطية
+    function restoreAudioFile(id) {
+      if (!confirm('هل أنت متأكد من استعادة هذا الملف من النسخة الاحتياطية؟')) return;
+
+      fetch(`/restore-audio/${id}`, {
+        method: 'POST'
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.message) {
+            alert('تم استعادة الملف بنجاح!');
+            checkAudioFiles(); // إعادة فحص الملفات
+          } else {
+            alert('حدث خطأ أثناء استعادة الملف: ' + data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error restoring audio file:', error);
+          alert('حدث خطأ أثناء استعادة الملف');
+        });
+    }
+
+    // تنسيق حجم الملف
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+  </script>
+</body>
+</html>
