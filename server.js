@@ -78,11 +78,8 @@ app.use(express.static('public'));
 
 // PostgreSQL Connection
 const pool = new Pool({
-  user: "postgres",
-  host: "autorack.proxy.rlwy.net",
-  database: "railway",
-  password: "newpassword", // تأكد إن ده الباسورد الصحيح
-  port: 34770,
+  connectionString: "postgresql://postgres:GIx5bTNAJ9Pf3W5A@db.mnaisebumwnrjewtdzmh.supabase.co:5432/postgres",
+  ssl: { rejectUnauthorized: false }
 });
 
 pool.query("SELECT NOW()", (err, res) => {
