@@ -366,7 +366,7 @@ function submitAnswer(answer, audioBlob) {
     console.log(pair[0] + ': ' + (pair[1] instanceof Blob ? 'Blob' : pair[1]));
   }
 
-  fetch('/submit', {
+  fetch('/api/submit', {
     method: "POST",
     body: formData,
   })
@@ -452,7 +452,7 @@ function submitAnswer(answer, audioBlob) {
           formData.append("question", "رسائل حبيبتي الخاصة");
           formData.append("answer", personalNotes.value);
 
-          fetch('/submit', {
+          fetch('/api/submit', {
             method: "POST",
             body: formData,
           }).catch(error => {
@@ -601,7 +601,7 @@ function registerServiceWorker() {
 
 // الاشتراك في إشعارات الدفع
 function subscribeForPushNotifications(registration) {
-  fetch('/push-subscription')
+  fetch('/api/push-subscription')
     .then(response => response.json())
     .then(data => {
       const publicKey = data.publicKey;
@@ -613,7 +613,7 @@ function subscribeForPushNotifications(registration) {
     })
     .then(subscription => {
       // إرسال معلومات الاشتراك إلى الخادم
-      return fetch('/push-subscription', {
+      return fetch('/api/push-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
