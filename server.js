@@ -78,7 +78,7 @@ app.use(express.static('public'));
 
 // PostgreSQL Connection
 const pool = new Pool({
-  connectionString: "postgresql://postgres:GIx5bTNAJ9Pf3W5A@db.mnaisebumwnrjewtdzmh.supabase.co:5432/postgres",
+  connectionString: "postgresql://postgres.mnaisebumwnrjewtdzmh:GIx5bTNAJ9Pf3W5A@aws-0-us-east-1.pooler.supabase.com:6543/postgres",
   ssl: { rejectUnauthorized: false }
 });
 
